@@ -29,7 +29,7 @@ try {
   console.error("Firebase keys missing.");
 }
 
-const APP_NAME = "Humsafar";
+const APP_NAME = "Humsafar ";
 const APP_TAGLINE = "Rishtey wahi, jo dil se judey.";
 
 // --- HELPER: AGE CALCULATOR ---
