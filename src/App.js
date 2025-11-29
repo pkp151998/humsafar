@@ -30,7 +30,7 @@ try {
 }
 
 // --- APP BRANDING ---
-const APP_NAME = "Humsafar Rishtey";
+const APP_NAME = "Humsafar";
 const APP_TAGLINE = "Rishtey wahi, jo dil se judey."; 
 const ADMIN_USERNAME = "admin"; 
 const ADMIN_PASSWORD = "123";
