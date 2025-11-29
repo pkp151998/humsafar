@@ -270,6 +270,8 @@ const GroupAdminDashboard = ({ user, onLogout }) => {
   const [rawText, setRawText] = useState('');
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState(null);
+
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -332,11 +334,31 @@ const GroupAdminDashboard = ({ user, onLogout }) => {
                 </div>
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                    {profiles.map(p => (
-                      <div key={p.id} className="p-4 border-b flex justify-between items-center hover:bg-gray-50">
-                         <div><div className="font-bold text-gray-800">{p.name}</div><div className="text-xs text-gray-500">{p.profession} • {p.city || p.pob}</div></div>
-                         <button onClick={() => handleDelete(p.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={18}/></button>
-                      </div>
-                   ))}
+                     <div
+          key={p.id}
+          className="p-4 border-b flex justify-between items-center hover:bg-gray-50 cursor-pointer"
+          onClick={() => {
+            setSelectedProfile(p);    // store clicked profile
+            setView('detail');        // switch to detail view
+          }}
+        >
+          <div>
+            <div className="font-bold text-gray-800">{p.name}</div>
+            <div className="text-xs text-gray-500">
+              {p.profession} • {p.city || p.pob}
+            </div>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();      // IMPORTANT: prevent opening detail view
+              handleDelete(p.id);
+            }}
+            className="text-gray-400 hover:text-red-500"
+          >
+            <Trash2 size={18}/>
+          </button>
+        </div>
+      ))}
                    {profiles.length === 0 && <div className="p-8 text-center text-gray-400">No profiles yet.</div>}
                 </div>
              </div>
@@ -362,6 +384,75 @@ const GroupAdminDashboard = ({ user, onLogout }) => {
                 <button onClick={handleSave} disabled={loading} className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold w-full">{loading ? "Saving..." : "Publish"}</button>
              </div>
           )}
+      {view === 'detail' && selectedProfile && (
+        <div className="max-w-2xl bg-white p-6 rounded-2xl shadow-sm">
+          <button
+            onClick={() => {
+              setView('list');
+              setSelectedProfile(null);
+            }}
+            className="text-xs mb-4 text-indigo-600 hover:underline"
+          >
+            ← Back to My Profiles
+          </button>
+
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            {selectedProfile.name}
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">
+            {selectedProfile.age && `${selectedProfile.age} yrs`} 
+            {selectedProfile.gender && ` • ${selectedProfile.gender}`}
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
+            <div>
+              <div className="text-[10px] uppercase text-gray-400 font-bold">Profession</div>
+              <div>{selectedProfile.profession || '—'}</div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase text-gray-400 font-bold">Income</div>
+              <div>{selectedProfile.income || '—'}</div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase text-gray-400 font-bold">City</div>
+              <div>{selectedProfile.city || selectedProfile.pob || selectedProfile.address || '—'}</div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase text-gray-400 font-bold">Height</div>
+              <div>{selectedProfile.height || '—'}</div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase text-gray-400 font-bold">Caste / Gotra</div>
+              <div>
+                {selectedProfile.caste || '—'}
+                {selectedProfile.gotra ? ` • ${selectedProfile.gotra}` : ''}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase text-gray-400 font-bold">Manglik</div>
+              <div>{selectedProfile.manglik || '—'}</div>
+            </div>
+
+            <div className="sm:col-span-2">
+              <div className="text-[10px] uppercase text-gray-400 font-bold">Contact</div>
+              <div className="font-mono text-base">
+                {selectedProfile.contact || '—'}
+              </div>
+            </div>
+
+            <div className="sm:col-span-2">
+              <div className="text-[10px] uppercase text-gray-400 font-bold">Address</div>
+              <div>{selectedProfile.address || '—'}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
        </div>
     </div>
   );
