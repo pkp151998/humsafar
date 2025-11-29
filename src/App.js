@@ -6,9 +6,33 @@ import {
   Palette, Utensils, Users2, DollarSign, LogOut, Lock, PlusCircle, Search, Menu, X, Heart
 } from 'lucide-react';
 
-// --- CONFIGURATION ---
-const APP_NAME = "SoulBind";
-const ADMIN_USERNAME = "admin";
+// --- FIREBASE IMPORTS ---
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+
+// --- ⚠️ CRITICAL: PASTE YOUR FIREBASE KEYS HERE ⚠️ ---
+const firebaseConfig = {
+  apiKey: "AIzaSy...",            // <--- PASTE FROM FIREBASE CONSOLE
+  authDomain: "soulbind...",      // <--- PASTE FROM FIREBASE CONSOLE
+  projectId: "soulbind...",       // <--- PASTE FROM FIREBASE CONSOLE
+  storageBucket: "...",           // <--- PASTE FROM FIREBASE CONSOLE
+  messagingSenderId: "...",       // <--- PASTE FROM FIREBASE CONSOLE
+  appId: "..."                    // <--- PASTE FROM FIREBASE CONSOLE
+};
+
+// Initialize Firebase safely
+let db;
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+} catch (e) {
+  console.error("Firebase keys missing. App running in offline mode.");
+}
+
+// --- APP BRANDING ---
+const APP_NAME = "Humsafar Rishtey";
+const APP_TAGLINE = "Rishtey wahi, jo dil se judey."; 
+const ADMIN_USERNAME = "admin"; 
 const ADMIN_PASSWORD = "123";
 
 // --- HELPER: AGE CALCULATOR ---
@@ -28,29 +52,7 @@ const calculateAge = (dobString) => {
   return age.toString();
 };
 
-// --- DATABASE SERVICE (Simulated Cloud) ---
-const DB = {
-  KEY: 'soulbind_global_profiles',
-  getProfiles: () => {
-    const data = localStorage.getItem(DB.KEY);
-    return data ? JSON.parse(data) : [];
-  },
-  addProfile: (profile) => {
-    const current = DB.getProfiles();
-    const newProfile = { ...profile, id: Date.now(), createdAt: new Date().toISOString() };
-    const updated = [newProfile, ...current];
-    localStorage.setItem(DB.KEY, JSON.stringify(updated));
-    return updated;
-  },
-  deleteProfile: (id) => {
-    const current = DB.getProfiles();
-    const updated = current.filter(p => p.id !== id);
-    localStorage.setItem(DB.KEY, JSON.stringify(updated));
-    return updated;
-  }
-};
-
-// --- PARSER ENGINE (Hybrid) ---
+// --- PARSER ENGINE ---
 const parseBiodataHybrid = (text) => {
   const data = {
     name: '', gender: '', age: '', height: '', dob: '', tob: '', pob: '', address: '',
@@ -131,14 +133,17 @@ const PublicNavbar = ({ onLoginClick }) => (
       <div className="flex justify-between items-center h-16">
         <div className="flex items-center gap-2">
            <div className="bg-rose-600 p-1.5 rounded-lg text-white"><Heart size={20} fill="white" /></div>
-           <span className="font-bold text-xl text-gray-800 tracking-tight">{APP_NAME}</span>
+           <div>
+             <span className="font-bold text-xl text-gray-800 tracking-tight block leading-none">{APP_NAME}</span>
+             <span className="text-[10px] text-gray-400 font-medium tracking-wide">MATCHMAKING</span>
+           </div>
         </div>
         <div className="flex items-center gap-4">
            <button onClick={onLoginClick} className="text-sm font-medium text-gray-500 hover:text-rose-600 transition-colors">
              Admin Login
            </button>
            <button className="bg-rose-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md hover:bg-rose-700 transition-all">
-             Join Now
+             Contact Us
            </button>
         </div>
       </div>
@@ -146,14 +151,25 @@ const PublicNavbar = ({ onLoginClick }) => (
   </nav>
 );
 
-const PublicHome = ({ profiles, onLoginClick }) => {
+const PublicHome = ({ profiles, onLoginClick, loading }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGender, setFilterGender] = useState('All');
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-900"></div>
+           <p className="text-gray-500 font-medium">Loading {APP_NAME}...</p>
+        </div>
+      </div>
+    );
+  }
+
   const filtered = profiles.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          p.profession.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.pob.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          p.profession?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          p.pob?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGender = filterGender === 'All' || p.gender === filterGender;
     return matchesSearch && matchesGender;
   });
@@ -163,9 +179,9 @@ const PublicHome = ({ profiles, onLoginClick }) => {
       <PublicNavbar onLoginClick={onLoginClick} />
       
       {/* Hero Section */}
-      <div className="bg-indigo-900 text-white py-16 px-4 text-center">
-         <h1 className="text-4xl font-extrabold mb-4">Find Your Perfect Match</h1>
-         <p className="text-indigo-200 mb-8 max-w-xl mx-auto">Trusted by thousands of families. Browse verified profiles from top communities.</p>
+      <div className="bg-gradient-to-r from-indigo-900 to-purple-800 text-white py-16 px-4 text-center">
+         <h1 className="text-4xl font-extrabold mb-4">Find Your <span className="text-yellow-400">Humsafar</span></h1>
+         <p className="text-indigo-100 mb-8 max-w-xl mx-auto text-lg">{APP_TAGLINE}</p>
          
          <div className="max-w-2xl mx-auto bg-white p-2 rounded-xl shadow-lg flex flex-col md:flex-row gap-2">
             <div className="flex-1 relative">
@@ -186,14 +202,13 @@ const PublicHome = ({ profiles, onLoginClick }) => {
               <option value="Female">Brides</option>
               <option value="Male">Grooms</option>
             </select>
-            <button className="bg-rose-600 px-8 py-3 rounded-lg font-bold hover:bg-rose-700 transition-colors">Search</button>
          </div>
       </div>
 
       {/* Directory Grid */}
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="flex items-center justify-between mb-8">
-           <h2 className="text-2xl font-bold text-gray-800">Latest Profiles</h2>
+           <h2 className="text-2xl font-bold text-gray-800">Latest Rishtey</h2>
            <span className="text-gray-500 text-sm font-medium">{filtered.length} profiles found</span>
         </div>
 
@@ -246,7 +261,7 @@ const PublicHome = ({ profiles, onLoginClick }) => {
         
         {filtered.length === 0 && (
            <div className="text-center py-20">
-              <p className="text-gray-400">No profiles match your search.</p>
+              <p className="text-gray-400">No profiles found.</p>
            </div>
         )}
       </div>
@@ -275,7 +290,7 @@ const AdminLogin = ({ onLogin, onBack }) => {
        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
           <div className="text-center mb-6">
              <h2 className="text-2xl font-bold text-gray-800">Admin Portal</h2>
-             <p className="text-sm text-gray-500">Please sign in to manage profiles</p>
+             <p className="text-sm text-gray-500">Sign in to manage {APP_NAME}</p>
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
              <input className="w-full p-3 border rounded-lg outline-none focus:border-indigo-500" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} />
@@ -290,10 +305,22 @@ const AdminLogin = ({ onLogin, onBack }) => {
 };
 
 const AdminDashboard = ({ onLogout }) => {
-  const [profiles, setProfiles] = useState(DB.getProfiles());
-  const [view, setView] = useState('list'); // list, add
+  const [profiles, setProfiles] = useState([]);
+  const [view, setView] = useState('list'); 
   const [rawText, setRawText] = useState('');
   const [formData, setFormData] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      if(!db) return;
+      const q = query(collection(db, "profiles"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProfiles(data);
+    };
+    fetchProfiles();
+  }, [view]);
 
   const handleParse = () => {
     if(!rawText.trim()) return;
@@ -302,17 +329,30 @@ const AdminDashboard = ({ onLogout }) => {
     setView('review');
   };
 
-  const handleSave = () => {
-    const updated = DB.addProfile(formData);
-    setProfiles(updated);
-    setRawText('');
-    setView('list');
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+        if(!db) throw new Error("Firebase not connected");
+        await addDoc(collection(db, "profiles"), {
+            ...formData,
+            createdAt: new Date().toISOString()
+        });
+        setRawText('');
+        setView('list');
+    } catch (e) {
+        alert("Error saving: " + e.message);
+    }
+    setLoading(false);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if(window.confirm('Delete this profile?')) {
-       const updated = DB.deleteProfile(id);
-       setProfiles(updated);
+       try {
+         await deleteDoc(doc(db, "profiles", id));
+         setProfiles(profiles.filter(p => p.id !== id));
+       } catch (e) {
+         alert("Error deleting: " + e.message);
+       }
     }
   };
 
@@ -320,10 +360,9 @@ const AdminDashboard = ({ onLogout }) => {
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans flex flex-col md:flex-row">
-       {/* Sidebar */}
        <div className="bg-indigo-900 text-white w-full md:w-64 flex-shrink-0 p-6 flex flex-col justify-between">
           <div>
-             <h2 className="text-2xl font-bold mb-8 flex items-center gap-2"><Lock size={20}/> Admin</h2>
+             <h2 className="text-2xl font-bold mb-8 flex items-center gap-2"><Lock size={20}/> {APP_NAME}</h2>
              <nav className="space-y-2">
                 <button onClick={() => setView('list')} className={`w-full text-left px-4 py-2 rounded-lg ${view === 'list' ? 'bg-indigo-800' : 'hover:bg-indigo-800'}`}>Dashboard</button>
                 <button onClick={() => setView('add')} className={`w-full text-left px-4 py-2 rounded-lg ${view === 'add' || view === 'review' ? 'bg-indigo-800' : 'hover:bg-indigo-800'}`}>Add Profile</button>
@@ -332,7 +371,6 @@ const AdminDashboard = ({ onLogout }) => {
           <button onClick={onLogout} className="flex items-center gap-2 text-indigo-300 hover:text-white transition-colors"><LogOut size={16}/> Logout</button>
        </div>
 
-       {/* Main Content */}
        <div className="flex-1 p-6 md:p-10 overflow-y-auto h-screen">
           {view === 'list' && (
              <div>
@@ -340,6 +378,13 @@ const AdminDashboard = ({ onLogout }) => {
                    <h1 className="text-2xl font-bold text-gray-800">Managed Profiles</h1>
                    <button onClick={() => setView('add')} className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2"><PlusCircle size={18}/> Add New</button>
                 </div>
+                
+                {!db && (
+                   <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-4 text-sm font-bold border border-red-200">
+                      ⚠️ Database not connected! Please paste your Firebase Keys in App.js.
+                   </div>
+                )}
+
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                    <table className="w-full text-left border-collapse">
                       <thead className="bg-gray-50 border-b border-gray-200">
@@ -394,7 +439,9 @@ const AdminDashboard = ({ onLogout }) => {
                    <Input label="City" val={formData.pob} onChange={v => handleChange('pob', v)} />
                    <Input label="Contact" val={formData.contact} onChange={v => handleChange('contact', v)} full />
                 </div>
-                <button onClick={handleSave} className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold w-full">Publish to Website</button>
+                <button onClick={handleSave} disabled={loading} className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold w-full">
+                   {loading ? "Saving to Cloud..." : "Publish to Humsafar"}
+                </button>
              </div>
           )}
        </div>
@@ -412,12 +459,27 @@ const Input = ({ label, val, onChange, full }) => (
 // --- MAIN ROUTER ---
 
 export default function App() {
-  const [view, setView] = useState('public'); // public, login, admin
+  const [view, setView] = useState('public'); 
   const [profiles, setProfiles] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load profiles on mount
   useEffect(() => {
-     setProfiles(DB.getProfiles());
+     const fetchProfiles = async () => {
+        if(!db) {
+            setLoading(false);
+            return;
+        }
+        try {
+            const q = query(collection(db, "profiles"), orderBy("createdAt", "desc"));
+            const querySnapshot = await getDocs(q);
+            const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setProfiles(data);
+        } catch(e) {
+            console.error("Error loading profiles:", e);
+        }
+        setLoading(false);
+     };
+     fetchProfiles();
   }, [view]);
 
   const handleLogin = () => setView('admin');
@@ -425,7 +487,7 @@ export default function App() {
 
   return (
     <div>
-      {view === 'public' && <PublicHome profiles={profiles} onLoginClick={() => setView('login')} />}
+      {view === 'public' && <PublicHome profiles={profiles} onLoginClick={() => setView('login')} loading={loading} />}
       {view === 'login' && <AdminLogin onLogin={handleLogin} onBack={() => setView('public')} />}
       {view === 'admin' && <AdminDashboard onLogout={handleLogout} />}
     </div>
