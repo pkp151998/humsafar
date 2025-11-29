@@ -12,12 +12,12 @@ import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, order
 
 // --- ⚠️ CRITICAL: PASTE YOUR FIREBASE KEYS HERE ⚠️ ---
 const firebaseConfig = {
-  apiKey: "AIzaSy...",            // <--- PASTE FROM FIREBASE CONSOLE
-  authDomain: "soulbind...",      // <--- PASTE FROM FIREBASE CONSOLE
-  projectId: "soulbind...",       // <--- PASTE FROM FIREBASE CONSOLE
-  storageBucket: "...",           // <--- PASTE FROM FIREBASE CONSOLE
-  messagingSenderId: "...",       // <--- PASTE FROM FIREBASE CONSOLE
-  appId: "..."                    // <--- PASTE FROM FIREBASE CONSOLE
+  apiKey: "AIzaSyB5gD4mjL3g6jASaDTSXauil1Dm7zHVn7c",
+  authDomain: "myhumsafar-5b72d.firebaseapp.com",
+  projectId: "myhumsafar-5b72d",
+  storageBucket: "myhumsafar-5b72d.firebasestorage.app",
+  messagingSenderId: "455231316018",
+  appId: "1:455231316018:web:3296dde5d54c7ac0eedc2b"
 };
 
 // Initialize Firebase safely
