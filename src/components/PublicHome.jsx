@@ -9,7 +9,7 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGender, setFilterGender] = useState("All");
 
-  // 👉 NEW: selected profile for popup
+  // Selected profile for popup
   const [selectedProfile, setSelectedProfile] = useState(null);
 
   const filtered = profiles.filter((p) => {
@@ -90,6 +90,12 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
                     <p className="text-xs text-gray-500">
                       {p.age} Yrs • {p.height}
                     </p>
+                    {/* Profile number under name */}
+                    {p.globalProfileNo && (
+                      <p className="text-[11px] text-gray-400 mt-1">
+                        Profile No: {p.globalProfileNo}
+                      </p>
+                    )}
                   </div>
 
                   <span className="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded">
@@ -102,7 +108,7 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
                 <div>💼 {p.profession}</div>
                 <div>📍 {p.pob || p.address}</div>
 
-                {/* 👉 Open Profile Popup */}
+                {/* View full profile popup */}
                 <button
                   onClick={() => setSelectedProfile(p)}
                   className="w-full mt-4 border border-rose-600 text-rose-600 font-bold py-2 rounded-lg"
@@ -121,9 +127,7 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
         </div>
       </div>
 
-      {/* ---------------------------------------------- */}
       {/* FULL PROFILE POPUP MODAL */}
-      {/* ---------------------------------------------- */}
       {selectedProfile && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl relative">
@@ -135,10 +139,23 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
               ✕
             </button>
 
-            {/* Profile Title */}
+            {/* Name + basic */}
             <h2 className="text-2xl font-bold text-gray-800 mb-1">
               {selectedProfile.name}
             </h2>
+
+            {/* Profile numbers */}
+            {selectedProfile.globalProfileNo && (
+              <p className="text-xs text-gray-500">
+                Profile No: {selectedProfile.globalProfileNo}
+              </p>
+            )}
+            {selectedProfile.groupProfileNo && (
+              <p className="text-xs text-gray-400 mb-2">
+                Group Profile: {selectedProfile.groupProfileNo}
+              </p>
+            )}
+
             <p className="text-sm text-gray-500 mb-4">
               {selectedProfile.age && `${selectedProfile.age} yrs`} •{" "}
               {selectedProfile.gender}
