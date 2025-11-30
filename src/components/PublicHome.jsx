@@ -8,8 +8,6 @@ const APP_TAGLINE = "Rishtey wahi, jo dil se judey.";
 export default function PublicHome({ profiles, onLoginClick, loading }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGender, setFilterGender] = useState("All");
-
-  // Selected profile for popup
   const [selectedProfile, setSelectedProfile] = useState(null);
 
   const filtered = profiles.filter((p) => {
@@ -47,7 +45,7 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero */}
       <div className="bg-gradient-to-r from-indigo-900 to-purple-800 text-white py-16 px-4 text-center">
         <h1 className="text-4xl font-extrabold mb-4">Find Your Humsafar</h1>
         <p className="text-indigo-100 mb-8">{APP_TAGLINE}</p>
@@ -88,9 +86,9 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
                       {p.name}
                     </h3>
                     <p className="text-xs text-gray-500">
-                      {p.age} Yrs • {p.height}
+                      {p.age && `${p.age} Yrs`}{" "}
+                      {p.height && `• ${p.height}`}
                     </p>
-                    {/* Profile number under name */}
                     {p.globalProfileNo && (
                       <p className="text-[11px] text-gray-400 mt-1">
                         Profile No: {p.globalProfileNo}
@@ -105,10 +103,15 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
               </div>
 
               <div className="p-4 text-sm text-gray-600 space-y-2">
-                <div>💼 {p.profession}</div>
-                <div>📍 {p.pob || p.address}</div>
+                <div>💼 {p.profession || "—"}</div>
+                <div>
+                  📍{" "}
+                  {p.city ||
+                    p.pob ||
+                    p.address ||
+                    "—"}
+                </div>
 
-                {/* View full profile popup */}
                 <button
                   onClick={() => setSelectedProfile(p)}
                   className="w-full mt-4 border border-rose-600 text-rose-600 font-bold py-2 rounded-lg"
@@ -127,11 +130,11 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
         </div>
       </div>
 
-      {/* FULL PROFILE POPUP MODAL */}
+      {/* FULL PROFILE POPUP */}
       {selectedProfile && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl relative">
-            {/* Close button */}
+          <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl relative max-h-[90vh] overflow-y-auto">
+            {/* Close */}
             <button
               className="absolute top-2 right-3 text-gray-500 text-xl"
               onClick={() => setSelectedProfile(null)}
@@ -139,12 +142,11 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
               ✕
             </button>
 
-            {/* Name + basic */}
+            {/* Header */}
             <h2 className="text-2xl font-bold text-gray-800 mb-1">
               {selectedProfile.name}
             </h2>
 
-            {/* Profile numbers */}
             {selectedProfile.globalProfileNo && (
               <p className="text-xs text-gray-500">
                 Profile No: {selectedProfile.globalProfileNo}
@@ -157,47 +159,138 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
             )}
 
             <p className="text-sm text-gray-500 mb-4">
-              {selectedProfile.age && `${selectedProfile.age} yrs`} •{" "}
-              {selectedProfile.gender}
+              {selectedProfile.age && `${selectedProfile.age} yrs`}{" "}
+              {selectedProfile.gender && `• ${selectedProfile.gender}`}{" "}
+              {selectedProfile.height && `• ${selectedProfile.height}`}
             </p>
 
-            {/* Profile Details */}
-            <div className="space-y-2 text-gray-700 text-sm">
-              <p>
-                <strong>Profession:</strong>{" "}
-                {selectedProfile.profession || "—"}
-              </p>
-              <p>
-                <strong>Income:</strong> {selectedProfile.income || "—"}
-              </p>
-              <p>
-                <strong>City:</strong>{" "}
-                {selectedProfile.city ||
-                  selectedProfile.pob ||
-                  selectedProfile.address ||
-                  "—"}
-              </p>
-              <p>
-                <strong>Height:</strong> {selectedProfile.height || "—"}
-              </p>
-              <p>
-                <strong>Caste:</strong> {selectedProfile.caste || "—"}
-              </p>
-              <p>
-                <strong>Gotra:</strong> {selectedProfile.gotra || "—"}
-              </p>
-              <p>
-                <strong>Manglik:</strong> {selectedProfile.manglik || "—"}
-              </p>
-              <p>
-                <strong>Contact:</strong>{" "}
-                <span className="font-mono">
-                  {selectedProfile.contact}
-                </span>
-              </p>
-              <p>
-                <strong>Address:</strong> {selectedProfile.address || "—"}
-              </p>
+            {/* Sections */}
+            <div className="space-y-3 text-sm text-gray-700">
+              {/* Education & Work */}
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 font-bold">
+                  Education
+                </p>
+                <p>{selectedProfile.education || "—"}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 font-bold">
+                  Profession
+                </p>
+                <p>{selectedProfile.profession || "—"}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 font-bold">
+                  Company / Business
+                </p>
+                <p>{selectedProfile.company || "—"}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 font-bold">
+                  Income
+                </p>
+                <p>{selectedProfile.income || "—"}</p>
+              </div>
+
+              {/* Astro / Personal */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] uppercase text-gray-400 font-bold">
+                    DOB
+                  </p>
+                  <p>{selectedProfile.dob || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-gray-400 font-bold">
+                    Birth Time
+                  </p>
+                  <p>{selectedProfile.tob || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-gray-400 font-bold">
+                    Birth Place
+                  </p>
+                  <p>{selectedProfile.pob || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-gray-400 font-bold">
+                    Manglik
+                  </p>
+                  <p>{selectedProfile.manglik || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-gray-400 font-bold">
+                    Diet
+                  </p>
+                  <p>{selectedProfile.diet || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-gray-400 font-bold">
+                    Caste / Gotra
+                  </p>
+                  <p>
+                    {selectedProfile.caste || "—"}
+                    {selectedProfile.gotra
+                      ? ` • ${selectedProfile.gotra}`
+                      : ""}
+                  </p>
+                </div>
+              </div>
+
+              {/* Location */}
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 font-bold">
+                  City
+                </p>
+                <p>
+                  {selectedProfile.city ||
+                    selectedProfile.pob ||
+                    selectedProfile.address ||
+                    "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 font-bold">
+                  Address
+                </p>
+                <p>{selectedProfile.address || "—"}</p>
+              </div>
+
+              {/* Family */}
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 font-bold">
+                  Father
+                </p>
+                <p>{selectedProfile.father || "—"}</p>
+                <p className="text-xs text-gray-500">
+                  {selectedProfile.fatherOcc}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 font-bold">
+                  Mother
+                </p>
+                <p>{selectedProfile.mother || "—"}</p>
+                <p className="text-xs text-gray-500">
+                  {selectedProfile.motherOcc}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 font-bold">
+                  Siblings
+                </p>
+                <p>{selectedProfile.siblings || "—"}</p>
+              </div>
+
+              {/* Contact */}
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 font-bold">
+                  Contact
+                </p>
+                <p className="font-mono">
+                  {selectedProfile.contact || "—"}
+                </p>
+              </div>
             </div>
           </div>
         </div>

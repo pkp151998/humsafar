@@ -8,7 +8,7 @@ import {
   deleteDoc,
   doc,
   query,
-  where
+  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { parseBiodataHybrid } from "../utils/parseBiodata";
@@ -22,9 +22,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState(null);
 
-  // ---------------------------------------------------
   // FETCH PROFILES FOR THIS GROUP
-  // ---------------------------------------------------
   useEffect(() => {
     const fetchProfiles = async () => {
       if (!db) return;
@@ -35,15 +33,16 @@ export default function GroupAdminDashboard({ user, onLogout }) {
       );
 
       const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const data = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
       setProfiles(data);
     };
     fetchProfiles();
   }, [view, user.groupName]);
 
-  // ---------------------------------------------------
   // PARSE WHATSAPP BIODATA
-  // ---------------------------------------------------
   const handleParse = () => {
     if (!rawText.trim()) return;
     const data = parseBiodataHybrid(rawText);
@@ -51,34 +50,32 @@ export default function GroupAdminDashboard({ user, onLogout }) {
     setView("review");
   };
 
-  // ---------------------------------------------------
   // SAVE PROFILE with Global + Group Profile Numbers
-  // ---------------------------------------------------
   const handleSave = async () => {
     setLoading(true);
     try {
-      // 🔢 TOTAL HUMSAFAR PROFILES (GLOBAL)
+      // GLOBAL COUNT
       const allProfilesSnap = await getDocs(collection(db, "profiles"));
       const totalProfiles = allProfilesSnap.size + 1;
       const globalProfileNo = `HS-${String(totalProfiles).padStart(5, "0")}`;
 
-      // 🔢 TOTAL GROUP PROFILES
+      // GROUP COUNT
       const groupSnap = await getDocs(
-        query(collection(db, "profiles"), where("groupName", "==", user.groupName))
+        query(
+          collection(db, "profiles"),
+          where("groupName", "==", user.groupName)
+        )
       );
       const groupCount = groupSnap.size + 1;
       const groupProfileNo = `${user.groupName}-${groupCount}`;
 
-      // SAVE TO FIRESTORE
       await addDoc(collection(db, "profiles"), {
         ...formData,
         groupName: user.groupName,
         addedBy: user.username,
         createdAt: new Date().toISOString(),
-
-        // 👉 NEW FIELDS
         globalProfileNo,
-        groupProfileNo
+        groupProfileNo,
       });
 
       setRawText("");
@@ -89,9 +86,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
     setLoading(false);
   };
 
-  // ---------------------------------------------------
   // DELETE PROFILE
-  // ---------------------------------------------------
   const handleDelete = async (id) => {
     if (window.confirm("Delete this profile?")) {
       await deleteDoc(doc(db, "profiles", id));
@@ -99,11 +94,12 @@ export default function GroupAdminDashboard({ user, onLogout }) {
     }
   };
 
-  const handleChange = (field, val) => setFormData({ ...formData, [field]: val });
+  const handleChange = (field, val) =>
+    setFormData({
+      ...formData,
+      [field]: val,
+    });
 
-  // ---------------------------------------------------
-  // UI
-  // ---------------------------------------------------
   return (
     <div className="min-h-screen bg-gray-100 font-sans flex flex-col md:flex-row">
       {/* LEFT SIDEBAR */}
@@ -143,12 +139,13 @@ export default function GroupAdminDashboard({ user, onLogout }) {
 
       {/* MAIN CONTENT */}
       <div className="flex-1 p-6 overflow-y-auto h-screen">
-
         {/* LIST VIEW */}
         {view === "list" && (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-800">My Profiles</h1>
+              <h1 className="text-2xl font-bold text-gray-800">
+                My Profiles
+              </h1>
 
               <button
                 onClick={() => setView("add")}
@@ -171,13 +168,14 @@ export default function GroupAdminDashboard({ user, onLogout }) {
                   <div>
                     <div className="font-bold text-gray-800">{p.name}</div>
                     <div className="text-xs text-gray-500">
-                      {p.profession}
+                      {p.age && `${p.age} yrs`} {p.gender && `• ${p.gender}`}{" "}
+                      {p.city && `• ${p.city}`}
                     </div>
-
-                    {/* ✔ Show profile number */}
-                    <div className="text-[10px] text-gray-400">
-                      {p.globalProfileNo}
-                    </div>
+                    {p.globalProfileNo && (
+                      <div className="text-[10px] text-gray-400">
+                        {p.globalProfileNo}
+                      </div>
+                    )}
                   </div>
 
                   <button
@@ -223,155 +221,159 @@ export default function GroupAdminDashboard({ user, onLogout }) {
           </div>
         )}
 
-        {/* REVIEW */}
+        {/* REVIEW PANEL */}
         {view === "review" && (
-  <div className="max-w-2xl bg-white p-6 rounded-2xl shadow-sm">
-    <h2 className="text-xl font-bold text-gray-800 mb-4">
-      Review & Edit Profile
-    </h2>
-
-    <div className="grid grid-cols-2 gap-4 mb-6">
-      {/* Basic details */}
-      <Input
-        label="Name"
-        val={formData.name}
-        onChange={(v) => handleChange("name", v)}
-      />
-      <Input
-        label="Gender"
-        val={formData.gender}
-        onChange={(v) => handleChange("gender", v)}
-      />
-
-      <Input
-        label="Age"
-        val={formData.age}
-        onChange={(v) => handleChange("age", v)}
-      />
-      <Input
-        label="DOB"
-        val={formData.dob}
-        onChange={(v) => handleChange("dob", v)}
-      />
-
-      <Input
-        label="Height"
-        val={formData.height}
-        onChange={(v) => handleChange("height", v)}
-      />
-      <Input
-        label="Manglik"
-        val={formData.manglik}
-        onChange={(v) => handleChange("manglik", v)}
-      />
-
-      {/* Education & Profession */}
-      <Input
-        label="Education"
-        val={formData.education}
-        onChange={(v) => handleChange("education", v)}
-        full
-      />
-      <Input
-        label="Profession"
-        val={formData.profession}
-        onChange={(v) => handleChange("profession", v)}
-        full
-      />
-      <Input
-        label="Company / Business"
-        val={formData.company}
-        onChange={(v) => handleChange("company", v)}
-        full
-      />
-
-      <Input
-        label="Income"
-        val={formData.income}
-        onChange={(v) => handleChange("income", v)}
-      />
-      <Input
-        label="Diet"
-        val={formData.diet}
-        onChange={(v) => handleChange("diet", v)}
-      />
-
-      {/* Location */}
-      <Input
-        label="City"
-        val={formData.city || formData.pob}
-        onChange={(v) => {
-          handleChange("city", v);
-          if (!formData.pob) handleChange("pob", v);
-        }}
-      />
-      <Input
-        label="Birth Place"
-        val={formData.pob}
-        onChange={(v) => handleChange("pob", v)}
-      />
-
-      <Input
-        label="Address"
-        val={formData.address}
-        onChange={(v) => handleChange("address", v)}
-        full
-      />
-
-      {/* Family */}
-      <Input
-        label="Father Name"
-        val={formData.father}
-        onChange={(v) => handleChange("father", v)}
-      />
-      <Input
-        label="Father Occupation"
-        val={formData.fatherOcc}
-        onChange={(v) => handleChange("fatherOcc", v)}
-      />
-
-      <Input
-        label="Mother Name"
-        val={formData.mother}
-        onChange={(v) => handleChange("mother", v)}
-      />
-      <Input
-        label="Mother Occupation"
-        val={formData.motherOcc}
-        onChange={(v) => handleChange("motherOcc", v)}
-      />
-
-      <Input
-        label="Siblings"
-        val={formData.siblings}
-        onChange={(v) => handleChange("siblings", v)}
-        full
-      />
-
-      {/* Contact */}
-      <Input
-        label="Contact"
-        val={formData.contact}
-        onChange={(v) => handleChange("contact", v)}
-        full
-      />
-    </div>
-
-    <button
-      onClick={handleSave}
-      disabled={loading}
-      className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold w-full"
-    >
-      {loading ? "Saving..." : "Publish"}
-    </button>
-  </div>
-)}
-
-
-        {/* DETAIL VIEW */}
-        {view === "detail" && selectedProfile && (
           <div className="max-w-2xl bg-white p-6 rounded-2xl shadow-sm">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">
+              Review & Edit Profile
+            </h2>
 
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {/* Basic */}
+              <Input
+                label="Name"
+                val={formData.name}
+                onChange={(v) => handleChange("name", v)}
+              />
+              <Input
+                label="Gender"
+                val={formData.gender}
+                onChange={(v) => handleChange("gender", v)}
+              />
+              <Input
+                label="Age"
+                val={formData.age}
+                onChange={(v) => handleChange("age", v)}
+              />
+              <Input
+                label="DOB"
+                val={formData.dob}
+                onChange={(v) => handleChange("dob", v)}
+              />
+              <Input
+                label="Height"
+                val={formData.height}
+                onChange={(v) => handleChange("height", v)}
+              />
+              <Input
+                label="Manglik"
+                val={formData.manglik}
+                onChange={(v) => handleChange("manglik", v)}
+              />
+
+              {/* Education & Work */}
+              <Input
+                label="Education"
+                val={formData.education}
+                onChange={(v) => handleChange("education", v)}
+                full
+              />
+              <Input
+                label="Profession"
+                val={formData.profession}
+                onChange={(v) => handleChange("profession", v)}
+                full
+              />
+              <Input
+                label="Company / Business"
+                val={formData.company}
+                onChange={(v) => handleChange("company", v)}
+                full
+              />
+              <Input
+                label="Income"
+                val={formData.income}
+                onChange={(v) => handleChange("income", v)}
+              />
+              <Input
+                label="Diet"
+                val={formData.diet}
+                onChange={(v) => handleChange("diet", v)}
+              />
+
+              {/* Location */}
+              <Input
+                label="City"
+                val={formData.city || formData.pob}
+                onChange={(v) => {
+                  handleChange("city", v);
+                  if (!formData.pob) handleChange("pob", v);
+                }}
+              />
+              <Input
+                label="Birth Place"
+                val={formData.pob}
+                onChange={(v) => handleChange("pob", v)}
+              />
+              <Input
+                label="Address"
+                val={formData.address}
+                onChange={(v) => handleChange("address", v)}
+                full
+              />
+
+              {/* Caste / Gotra */}
+              <Input
+                label="Caste"
+                val={formData.caste}
+                onChange={(v) => handleChange("caste", v)}
+              />
+              <Input
+                label="Gotra"
+                val={formData.gotra}
+                onChange={(v) => handleChange("gotra", v)}
+              />
+
+              {/* Family */}
+              <Input
+                label="Father Name"
+                val={formData.father}
+                onChange={(v) => handleChange("father", v)}
+              />
+              <Input
+                label="Father Occupation"
+                val={formData.fatherOcc}
+                onChange={(v) => handleChange("fatherOcc", v)}
+              />
+              <Input
+                label="Mother Name"
+                val={formData.mother}
+                onChange={(v) => handleChange("mother", v)}
+              />
+              <Input
+                label="Mother Occupation"
+                val={formData.motherOcc}
+                onChange={(v) => handleChange("motherOcc", v)}
+              />
+              <Input
+                label="Siblings"
+                val={formData.siblings}
+                onChange={(v) => handleChange("siblings", v)}
+                full
+              />
+
+              {/* Contact */}
+              <Input
+                label="Contact"
+                val={formData.contact}
+                onChange={(v) => handleChange("contact", v)}
+                full
+              />
+            </div>
+
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold w-full"
+            >
+              {loading ? "Saving..." : "Publish"}
+            </button>
+          </div>
+        )}
+
+        {/* DETAIL VIEW – SHOW FULL BIODATA */}
+        {view === "detail" && selectedProfile && (
+          <div className="max-w-3xl bg-white p-6 rounded-2xl shadow-sm">
             <button
               onClick={() => {
                 setView("list");
@@ -382,82 +384,164 @@ export default function GroupAdminDashboard({ user, onLogout }) {
               ← Back to My Profiles
             </button>
 
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            {/* Header */}
+            <h2 className="text-2xl font-bold text-gray-800 mb-1">
               {selectedProfile.name}
             </h2>
 
-            <p className="text-sm text-gray-500 mb-2">
-              {selectedProfile.globalProfileNo}
-            </p>
+            {selectedProfile.globalProfileNo && (
+              <p className="text-xs text-gray-500">
+                Profile No: {selectedProfile.globalProfileNo}
+              </p>
+            )}
+            {selectedProfile.groupProfileNo && (
+              <p className="text-xs text-gray-400 mb-2">
+                Group Profile: {selectedProfile.groupProfileNo}
+              </p>
+            )}
 
             <p className="text-sm text-gray-500 mb-4">
-              {selectedProfile.age && `${selectedProfile.age} yrs`} •{" "}
-              {selectedProfile.gender}
+              {selectedProfile.age && `${selectedProfile.age} yrs`}{" "}
+              {selectedProfile.gender && `• ${selectedProfile.gender}`}{" "}
+              {selectedProfile.height && `• ${selectedProfile.height}`}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
-
-              <div>
-                <div className="text-[10px] uppercase text-gray-400 font-bold">
-                  Group Profile No
-                </div>
-                <div>{selectedProfile.groupProfileNo}</div>
-              </div>
-
-              <div>
-                <div className="text-[10px] uppercase text-gray-400 font-bold">
-                  Profession
-                </div>
-                <div>{selectedProfile.profession || "—"}</div>
-              </div>
-
-              <div>
-                <div className="text-[10px] uppercase text-gray-400 font-bold">
-                  Income
-                </div>
-                <div>{selectedProfile.income || "—"}</div>
-              </div>
-
-              <div>
-                <div className="text-[10px] uppercase text-gray-400 font-bold">
-                  City
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-700">
+              {/* Basic / Astro */}
+              <div className="space-y-2">
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    DOB
+                  </div>
+                  <div>{selectedProfile.dob || "—"}</div>
                 </div>
                 <div>
-                  {selectedProfile.city ||
-                    selectedProfile.pob ||
-                    selectedProfile.address ||
-                    "—"}
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Birth Time
+                  </div>
+                  <div>{selectedProfile.tob || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Birth Place
+                  </div>
+                  <div>{selectedProfile.pob || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Manglik
+                  </div>
+                  <div>{selectedProfile.manglik || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Diet
+                  </div>
+                  <div>{selectedProfile.diet || "—"}</div>
                 </div>
               </div>
 
-              <div>
-                <div className="text-[10px] uppercase text-gray-400 font-bold">
-                  Height
+              {/* Education & Work */}
+              <div className="space-y-2">
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Education
+                  </div>
+                  <div>{selectedProfile.education || "—"}</div>
                 </div>
-                <div>{selectedProfile.height || "—"}</div>
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Profession
+                  </div>
+                  <div>{selectedProfile.profession || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Company / Business
+                  </div>
+                  <div>{selectedProfile.company || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Income
+                  </div>
+                  <div>{selectedProfile.income || "—"}</div>
+                </div>
               </div>
 
-              <div>
-                <div className="text-[10px] uppercase text-gray-400 font-bold">
-                  Manglik
+              {/* Location */}
+              <div className="space-y-2">
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    City
+                  </div>
+                  <div>
+                    {selectedProfile.city ||
+                      selectedProfile.pob ||
+                      selectedProfile.address ||
+                      "—"}
+                  </div>
                 </div>
-                <div>{selectedProfile.manglik || "—"}</div>
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Address
+                  </div>
+                  <div>{selectedProfile.address || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Caste / Gotra
+                  </div>
+                  <div>
+                    {selectedProfile.caste || "—"}
+                    {selectedProfile.gotra
+                      ? ` • ${selectedProfile.gotra}`
+                      : ""}
+                  </div>
+                </div>
               </div>
 
-              <div className="sm:col-span-2">
-                <div className="text-[10px] uppercase text-gray-400 font-bold">
-                  Contact
+              {/* Family */}
+              <div className="space-y-2">
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Father
+                  </div>
+                  <div>{selectedProfile.father || "—"}</div>
+                  <div className="text-xs text-gray-500">
+                    {selectedProfile.fatherOcc}
+                  </div>
                 </div>
-                <div className="font-mono text-base">
-                  {selectedProfile.contact || "—"}
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Mother
+                  </div>
+                  <div>{selectedProfile.mother || "—"}</div>
+                  <div className="text-xs text-gray-500">
+                    {selectedProfile.motherOcc}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Siblings
+                  </div>
+                  <div>{selectedProfile.siblings || "—"}</div>
                 </div>
               </div>
 
-              <div className="sm:col-span-2">
-                <div className="text-[10px] uppercase text-gray-400 font-bold">
-                  Address
+              {/* Contact */}
+              <div className="md:col-span-2 space-y-2">
+                <div>
+                  <div className="text-[10px] uppercase text-gray-400 font-bold">
+                    Contact
+                  </div>
+                  <div className="font-mono text-base">
+                    {selectedProfile.contact || "—"}
+                  </div>
                 </div>
-                <div>{selectedProfile.address || "—"}</div>
+                <div className="text-[10px] text-gray-400">
+                  Added by: {selectedProfile.addedBy || "—"}
+                </div>
               </div>
             </div>
           </div>
