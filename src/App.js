@@ -16,6 +16,18 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (view === "superAdmin") {
+      document.title = "Humsafar – Super Admin";
+    } else if (view === "groupAdmin") {
+      document.title = "Humsafar – Group Admin";
+    } else if (view === "login") {
+      document.title = "Humsafar – Admin Login";
+    } else {
+      document.title = "Humsafar";   // public home
+    }
+  }, [view]);
+
+  useEffect(() => {
     const fetchProfiles = async () => {
       if (!db) { 
         setLoading(false); 
