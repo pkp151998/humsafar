@@ -8,7 +8,7 @@ import {
   deleteDoc,
   doc,
   query,
-  where,
+  where
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { parseBiodataHybrid } from "../utils/parseBiodata";
@@ -168,7 +168,8 @@ export default function GroupAdminDashboard({ user, onLogout }) {
                   <div>
                     <div className="font-bold text-gray-800">{p.name}</div>
                     <div className="text-xs text-gray-500">
-                      {p.age && `${p.age} yrs`} {p.gender && `• ${p.gender}`}{" "}
+                      {p.age && `${p.age} yrs`}{" "}
+                      {p.gender && `• ${p.gender}`}{" "}
                       {p.city && `• ${p.city}`}
                     </div>
                     {p.globalProfileNo && (
@@ -539,13 +540,29 @@ export default function GroupAdminDashboard({ user, onLogout }) {
                     {selectedProfile.contact || "—"}
                   </div>
                 </div>
-                <div className="text-[10px] text-gray-400">
+
+                {/* SHARE BUTTON in admin detail */}
+                {selectedProfile.globalProfileNo && (
+                  <button
+                    onClick={() => {
+                      const shareUrl = `${window.location.origin}?profile=${selectedProfile.globalProfileNo}`;
+                      navigator.clipboard.writeText(shareUrl);
+                      alert("Profile link copied!");
+                    }}
+                    className="mt-4 border border-indigo-600 text-indigo-600 px-4 py-2 rounded-lg font-semibold"
+                  >
+                    Share Profile
+                  </button>
+                )}
+
+                <div className="text-[10px] text-gray-400 mt-2">
                   Added by: {selectedProfile.addedBy || "—"}
                 </div>
               </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

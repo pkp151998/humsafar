@@ -112,12 +112,27 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
                     "—"}
                 </div>
 
+                {/* View full profile popup */}
                 <button
                   onClick={() => setSelectedProfile(p)}
                   className="w-full mt-4 border border-rose-600 text-rose-600 font-bold py-2 rounded-lg"
                 >
                   View Contact
                 </button>
+
+                {/* Share button on card (optional but nice) */}
+                {p.globalProfileNo && (
+                  <button
+                    onClick={() => {
+                      const shareUrl = `${window.location.origin}?profile=${p.globalProfileNo}`;
+                      navigator.clipboard.writeText(shareUrl);
+                      alert("Profile link copied!");
+                    }}
+                    className="w-full mt-2 border border-indigo-600 text-indigo-600 font-semibold py-2 rounded-lg text-sm"
+                  >
+                    Share Profile
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -291,6 +306,20 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
                   {selectedProfile.contact || "—"}
                 </p>
               </div>
+
+              {/* SHARE BUTTON in popup */}
+              {selectedProfile.globalProfileNo && (
+                <button
+                  onClick={() => {
+                    const shareUrl = `${window.location.origin}?profile=${selectedProfile.globalProfileNo}`;
+                    navigator.clipboard.writeText(shareUrl);
+                    alert("Profile link copied!");
+                  }}
+                  className="w-full mt-4 border border-indigo-600 text-indigo-600 font-bold py-2 rounded-lg"
+                >
+                  Share Profile
+                </button>
+              )}
             </div>
           </div>
         </div>
