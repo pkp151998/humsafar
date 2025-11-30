@@ -225,26 +225,148 @@ export default function GroupAdminDashboard({ user, onLogout }) {
 
         {/* REVIEW */}
         {view === "review" && (
-          <div className="max-w-2xl bg-white p-6 rounded-2xl shadow-sm">
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <Input label="Name" val={formData.name} onChange={(v) => handleChange("name", v)} />
-              <Input label="Age" val={formData.age} onChange={(v) => handleChange("age", v)} />
-              <Input label="Gender" val={formData.gender} onChange={(v) => handleChange("gender", v)} />
-              <Input label="Profession" val={formData.profession} onChange={(v) => handleChange("profession", v)} full />
-              <Input label="Income" val={formData.income} onChange={(v) => handleChange("income", v)} />
-              <Input label="City" val={formData.pob} onChange={(v) => handleChange("pob", v)} />
-              <Input label="Contact" val={formData.contact} onChange={(v) => handleChange("contact", v)} full />
-            </div>
+  <div className="max-w-2xl bg-white p-6 rounded-2xl shadow-sm">
+    <h2 className="text-xl font-bold text-gray-800 mb-4">
+      Review & Edit Profile
+    </h2>
 
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold w-full"
-            >
-              {loading ? "Saving..." : "Publish"}
-            </button>
-          </div>
-        )}
+    <div className="grid grid-cols-2 gap-4 mb-6">
+      {/* Basic details */}
+      <Input
+        label="Name"
+        val={formData.name}
+        onChange={(v) => handleChange("name", v)}
+      />
+      <Input
+        label="Gender"
+        val={formData.gender}
+        onChange={(v) => handleChange("gender", v)}
+      />
+
+      <Input
+        label="Age"
+        val={formData.age}
+        onChange={(v) => handleChange("age", v)}
+      />
+      <Input
+        label="DOB"
+        val={formData.dob}
+        onChange={(v) => handleChange("dob", v)}
+      />
+
+      <Input
+        label="Height"
+        val={formData.height}
+        onChange={(v) => handleChange("height", v)}
+      />
+      <Input
+        label="Manglik"
+        val={formData.manglik}
+        onChange={(v) => handleChange("manglik", v)}
+      />
+
+      {/* Education & Profession */}
+      <Input
+        label="Education"
+        val={formData.education}
+        onChange={(v) => handleChange("education", v)}
+        full
+      />
+      <Input
+        label="Profession"
+        val={formData.profession}
+        onChange={(v) => handleChange("profession", v)}
+        full
+      />
+      <Input
+        label="Company / Business"
+        val={formData.company}
+        onChange={(v) => handleChange("company", v)}
+        full
+      />
+
+      <Input
+        label="Income"
+        val={formData.income}
+        onChange={(v) => handleChange("income", v)}
+      />
+      <Input
+        label="Diet"
+        val={formData.diet}
+        onChange={(v) => handleChange("diet", v)}
+      />
+
+      {/* Location */}
+      <Input
+        label="City"
+        val={formData.city || formData.pob}
+        onChange={(v) => {
+          handleChange("city", v);
+          if (!formData.pob) handleChange("pob", v);
+        }}
+      />
+      <Input
+        label="Birth Place"
+        val={formData.pob}
+        onChange={(v) => handleChange("pob", v)}
+      />
+
+      <Input
+        label="Address"
+        val={formData.address}
+        onChange={(v) => handleChange("address", v)}
+        full
+      />
+
+      {/* Family */}
+      <Input
+        label="Father Name"
+        val={formData.father}
+        onChange={(v) => handleChange("father", v)}
+      />
+      <Input
+        label="Father Occupation"
+        val={formData.fatherOcc}
+        onChange={(v) => handleChange("fatherOcc", v)}
+      />
+
+      <Input
+        label="Mother Name"
+        val={formData.mother}
+        onChange={(v) => handleChange("mother", v)}
+      />
+      <Input
+        label="Mother Occupation"
+        val={formData.motherOcc}
+        onChange={(v) => handleChange("motherOcc", v)}
+      />
+
+      <Input
+        label="Siblings"
+        val={formData.siblings}
+        onChange={(v) => handleChange("siblings", v)}
+        full
+      />
+
+      {/* Contact */}
+      <Input
+        label="Contact"
+        val={formData.contact}
+        onChange={(v) => handleChange("contact", v)}
+        full
+      />
+    </div>
+
+    <button
+      onClick={handleSave}
+      disabled={loading}
+      className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold w-full"
+    >
+      {loading ? "Saving..." : "Publish"}
+    </button>
+  </div>
+)}
+
 
         {/* DETAIL VIEW */}
         {view === "detail" && selectedProfile && (

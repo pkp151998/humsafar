@@ -59,7 +59,7 @@ export const parseBiodataHybrid = (text) => {
     groupName: ""
   };
 
-  // normalise text a bit
+  // normalise a bit
   let cleanText = text
     .replace(/([a-z])(Name[:\-])/gi, "$1\n$2")
     .replace(/([a-z])(DOB[:\-])/gi, "$1\n$2")
@@ -70,20 +70,21 @@ export const parseBiodataHybrid = (text) => {
     .map((l) => l.trim())
     .filter(Boolean);
 
+  // 🔑 helper: match "Pattern ... value" where ... can be *,.,-,:
   const getValue = (patterns, excludeKeywords = []) => {
     for (let line of lines) {
-      if (
-        excludeKeywords.some((k) =>
-          line.toLowerCase().includes(k.toLowerCase())
-        )
-      )
-        continue;
+      const lower = line.toLowerCase();
+      if (excludeKeywords.some((k) => lower.includes(k.toLowerCase()))) continue;
 
       for (let pattern of patterns) {
-        const regex = new RegExp(`${pattern}\\s*[:\\-]+\\s*(.*)`, "i");
+        // allow Name:  Name-  Name.*  Name*  Name .
+        const regex = new RegExp(
+          `${pattern}[^a-z0-9\\n]*\\s*(.+)`,
+          "i"
+        );
         const match = line.match(regex);
         if (match && match[1]) {
-          return match[1].split(/,|\n/)[0].trim();
+          return match[1].trim();
         }
       }
     }
@@ -94,7 +95,7 @@ export const parseBiodataHybrid = (text) => {
   data.name = getValue(
     [
       "Name",
-      "Full Name",
+      "FULL\\s*NAME",
       "Candidate Name",
       "Boy Name",
       "Girl Name",
@@ -105,12 +106,12 @@ export const parseBiodataHybrid = (text) => {
   );
 
   data.gender = getValue(["Gender", "Sex"]);
-  data.height = getValue(["Height", "Ht"]);
+  data.height = getValue(["Height", "Ht", "HEIGHT"]);
   data.complexion = getValue(["Color", "Complexion", "Skin Tone"]);
   data.diet = getValue(["Diet", "Food"]);
-  data.dob = getValue(["Date of Birth", "DOB", "D\\.O\\.B"]);
+  data.dob = getValue(["Date of Birth", "DOB", "D\\.O\\.B", "D\\.O\\.B\\.", "D.O.B"]);
   data.tob = getValue(["Birth Time", "Time of Birth", "TOB", "Time"]);
-  data.pob = getValue(["Birth Place", "Place of Birth", "POB"]);
+  data.pob = getValue(["Birth Place", "Place of Birth", "POB", "Birth place"]);
   data.city =
     getValue(["City", "Location", "Residing at", "Living in"]) || data.pob;
 
@@ -118,11 +119,11 @@ export const parseBiodataHybrid = (text) => {
   data.gotra = getValue(["Gotra"]);
   data.education = getValue(["Qualification", "Education", "Degree"]);
   data.profession = getValue(
-    ["Profession", "Occupation", "Job", "Work"],
+    ["Profession", "Occupation", "Job", "Work", "Occuption", "Occuaption"],
     ["Father", "Mother"]
   );
   data.company = getValue(["Company", "Working at", "Working in", "Office"]);
-  data.income = getValue(["Package", "Income", "Salary", "CTC", "LPA"]);
+  data.income = getValue(["Package", "Income", "Salary", "CTC", "LPA", "Income."]);
   data.address = getValue([
     "Present Address",
     "Permanent Address",
@@ -136,41 +137,53 @@ export const parseBiodataHybrid = (text) => {
   lines.forEach((line) => {
     const l = line.toLowerCase();
 
-    if (l.includes("father") && (l.includes("name") || !l.includes("occupation"))) {
-      if (!data.father) data.father = line.split(/[:\-]/)[1]?.trim();
-    }
-
-    if (l.includes("mother") && (l.includes("name") || !l.includes("occupation"))) {
-      if (!data.mother) data.mother = line.split(/[:\-]/)[1]?.trim();
-    }
-
+    // father name
     if (
       l.includes("father") &&
-      (l.includes("occupation") ||
-        l.includes("job") ||
-        l.includes("working") ||
-        l.includes("business"))
+      (l.includes("name") || !l.includes("occupation"))
     ) {
-      data.fatherOcc = line.split(/[:\-]/)[1]?.trim();
+      const parts = line.split(/[:\-]/);
+      if (!data.father) {
+        data.father = (parts[1] || line.replace(/[*]/g, "")).replace(/father/i, "").trim();
+      }
     }
 
+    // mother name
     if (
       l.includes("mother") &&
-      (l.includes("occupation") ||
-        l.includes("job") ||
-        l.includes("housewife") ||
-        l.includes("working"))
+      (l.includes("name") || !l.includes("occupation"))
     ) {
-      data.motherOcc = line.split(/[:\-]/)[1]?.trim();
+      const parts = line.split(/[:\-]/);
+      if (!data.mother) {
+        data.mother = (parts[1] || line.replace(/[*]/g, "")).replace(/mother/i, "").trim();
+      }
     }
 
+    // father occupation
+    if (
+      l.includes("father") &&
+      (l.includes("occupation") || l.includes("occ.") || l.includes("job") || l.includes("working") || l.includes("business"))
+    ) {
+      const parts = line.split(/[:\-]/);
+      data.fatherOcc = (parts[1] || "").trim() || data.fatherOcc;
+    }
+
+    // mother occupation
+    if (
+      l.includes("mother") &&
+      (l.includes("occupation") || l.includes("occ.") || l.includes("job") || l.includes("housewife") || l.includes("working"))
+    ) {
+      const parts = line.split(/[:\-]/);
+      data.motherOcc = (parts[1] || "").trim() || data.motherOcc;
+    }
+
+    // siblings (no colon in your format, so take full line)
     if (
       l.includes("sibling") ||
       l.includes("brother") ||
       l.includes("sister")
     ) {
-      const parts = line.split(/[:\-]/);
-      if (parts[1]) data.siblings = parts[1].trim();
+      data.siblings = (data.siblings + " " + line).trim();
     }
   });
 
@@ -195,7 +208,7 @@ export const parseBiodataHybrid = (text) => {
 
   // INCOME fallback
   if (!data.income) {
-    const incMatch = text.match(/(\d+\.?\d*)\s*(LPA|Lac|Lakhs|CTC)/i);
+    const incMatch = text.match(/(\d+\.?\d*)\s*(LPA|Lac|Lakhs|CTC|lac)/i);
     if (incMatch) data.income = incMatch[0];
   }
 
@@ -220,12 +233,12 @@ export const parseBiodataHybrid = (text) => {
     if (calcAge) data.age = calcAge;
   }
 
-  // if no city but address has commas, try first chunk
+  // city fallback from address
   if (!data.city && data.address) {
     data.city = data.address.split(",")[0].trim();
   }
 
-  // log once to debug in console if needed
+  // Debug log (only in browser console)
   console.log("Parsed biodata:", data);
 
   return data;
