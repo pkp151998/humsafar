@@ -45,8 +45,13 @@ const SuperAdminDashboard = ({ user, onLogout }) => {
       return;
     }
 
+    if (!user || user.role !== "super") {
+      alert("Only Super Admins can create new admins.");
+      return;
+    }
+
     try {
-      // 1) Create Auth user
+      // 1) Create Auth user (sign-up)
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       const uid = cred.user.uid;
 
@@ -68,6 +73,29 @@ const SuperAdminDashboard = ({ user, onLogout }) => {
 
   const getProfileCount = (groupName) =>
     profiles.filter((p) => p.groupName === groupName).length;
+
+  // Frontend guard – even if someone forces this component,
+  // they won't see anything useful without being super admin.
+  if (!user || user.role !== "super") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white p-6 rounded-xl shadow text-center max-w-sm">
+          <p className="font-semibold text-gray-800 mb-2">
+            Access denied
+          </p>
+          <p className="text-sm text-gray-500 mb-4">
+            This area is restricted to Super Admins only.
+          </p>
+          <button
+            onClick={onLogout}
+            className="text-sm text-indigo-600 underline"
+          >
+            Return to website
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

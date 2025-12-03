@@ -9,10 +9,60 @@ import {
   doc,
   query,
   where,
+  runTransaction,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { parseBiodataHybrid } from "../utils/parseBiodata";
 import Input from "./Input";
+
+// --------- HELPERS ---------
+
+// Basic sanitization of text fields to avoid HTML/script injection
+const sanitizeProfile = (data) => {
+  const cleaned = {};
+  Object.keys(data || {}).forEach((key) => {
+    const value = data[key];
+    if (typeof value === "string") {
+      // strip HTML tags and trim, cap length
+      const noTags = value.replace(/<[^>]*>/g, "").trim();
+      cleaned[key] = noTags.slice(0, 500);
+    } else {
+      cleaned[key] = value;
+    }
+  });
+  return cleaned;
+};
+
+// Transaction-based counter so globalProfileNo is unique (no race condition)
+const getNextProfileNumbers = async (dbInstance, groupName) => {
+  const counterRef = doc(dbInstance, "meta", "counters");
+  const groupKey = `group_${groupName}`;
+
+  const result = await runTransaction(dbInstance, async (tx) => {
+    const snap = await tx.get(counterRef);
+    let data = {};
+    if (snap.exists()) {
+      data = snap.data();
+    }
+
+    const nextGlobal = (data.globalProfile || 0) + 1;
+    const nextGroup = (data[groupKey] || 0) + 1;
+
+    tx.set(
+      counterRef,
+      {
+        globalProfile: nextGlobal,
+        [groupKey]: nextGroup,
+      },
+      { merge: true }
+    );
+
+    return { global: nextGlobal, group: nextGroup };
+  });
+
+  return result;
+};
 
 export default function GroupAdminDashboard({ user, onLogout }) {
   const [profiles, setProfiles] = useState([]);
@@ -25,7 +75,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
   // FETCH PROFILES FOR THIS GROUP
   useEffect(() => {
     const fetchProfiles = async () => {
-      if (!db) return;
+      if (!db || !user?.groupName) return;
 
       const q = query(
         collection(db, "profiles"),
@@ -33,14 +83,14 @@ export default function GroupAdminDashboard({ user, onLogout }) {
       );
 
       const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      const data = querySnapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
       }));
       setProfiles(data);
     };
     fetchProfiles();
-  }, [view, user.groupName]);
+  }, [view, user?.groupName]);
 
   // PARSE WHATSAPP BIODATA
   const handleParse = () => {
@@ -50,37 +100,42 @@ export default function GroupAdminDashboard({ user, onLogout }) {
     setView("review");
   };
 
-  // SAVE PROFILE with Global + Group Profile Numbers
+  // SAVE PROFILE with safe counters + sanitization
   const handleSave = async () => {
+    if (!db) {
+      alert("App is not connected to database.");
+      return;
+    }
+
+    if (!user?.groupName) {
+      alert("Invalid group. Please log in again.");
+      return;
+    }
+
     setLoading(true);
     try {
-      // GLOBAL COUNT
-      const allProfilesSnap = await getDocs(collection(db, "profiles"));
-      const totalProfiles = allProfilesSnap.size + 1;
-      const globalProfileNo = `HS-${String(totalProfiles).padStart(5, "0")}`;
+      const cleaned = sanitizeProfile(formData);
 
-      // GROUP COUNT
-      const groupSnap = await getDocs(
-        query(
-          collection(db, "profiles"),
-          where("groupName", "==", user.groupName)
-        )
-      );
-      const groupCount = groupSnap.size + 1;
-      const groupProfileNo = `${user.groupName}-${groupCount}`;
+      // Generate unique global + group profile numbers using a transaction
+      const { global, group } = await getNextProfileNumbers(db, user.groupName);
+      const globalProfileNo = `HS-${String(global).padStart(5, "0")}`;
+      const groupProfileNo = `${user.groupName}-${group}`;
 
       await addDoc(collection(db, "profiles"), {
-        ...formData,
+        ...cleaned,
         groupName: user.groupName,
-        addedBy: user.username,
-        createdAt: new Date().toISOString(),
+        // enforce server-trusted identity, don't trust formData
+        addedBy: user.email || user.username || "unknown",
+        createdAt: serverTimestamp(),
         globalProfileNo,
         groupProfileNo,
       });
 
       setRawText("");
+      setFormData({});
       setView("list");
     } catch (e) {
+      console.error(e);
       alert("Error: " + e.message);
     }
     setLoading(false);
@@ -116,7 +171,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
             </div>
             <div>
               <h2 className="text-sm font-semibold leading-tight">
-                {user.groupName}
+                {user?.groupName}
               </h2>
               <p className="text-[11px] text-slate-400">Partner Dashboard</p>
             </div>
@@ -179,7 +234,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h1 className="text-xl font-semibold text-slate-50">
-                {user.groupName}
+                {user?.groupName}
               </h1>
               <p className="text-xs text-slate-400">
                 Manage and publish biodata profiles
@@ -548,9 +603,10 @@ export default function GroupAdminDashboard({ user, onLogout }) {
 
                 {/* Contact & Share */}
                 <div className="md:col-span-2 space-y-3">
+                  {/* Do NOT show raw contact here in case screen is shared */}
                   <Field
                     label="Contact"
-                    value={selectedProfile.contact}
+                    value="Contact details are shared only with authorized partners. Please connect via your group admin."
                     mono
                   />
                   {selectedProfile.globalProfileNo && (
