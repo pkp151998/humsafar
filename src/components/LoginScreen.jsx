@@ -1,4 +1,3 @@
-// src/components/LoginScreen.jsx
 import React, { useState } from "react";
 import { Lock } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
@@ -38,8 +37,6 @@ const LoginScreen = ({ onLogin, onBack }) => {
       }
 
       const adminData = adminSnap.data();
-      // Expect: { email, groupName, role: "super" | "group", ... }
-
       const role = adminData.role || "group";
 
       onLogin({
@@ -49,7 +46,6 @@ const LoginScreen = ({ onLogin, onBack }) => {
         groupName: adminData.groupName || "Humsafar",
         ...adminData,
       });
-
     } catch (err) {
       console.error(err);
       if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
