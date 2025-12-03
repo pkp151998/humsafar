@@ -1,72 +1,118 @@
+// src/components/LoginScreen.jsx
 import React, { useState } from "react";
 import { Lock } from "lucide-react";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../firebase";
-
+import { doc, getDoc } from "firebase/firestore";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { db, auth } from "../firebase";
 
 const LoginScreen = ({ onLogin, onBack }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-
-    // 1. Check Super Admin
-    if (username === 'master' && password === 'soulbind') {
-      onLogin({ role: 'super', username: 'Super Admin', groupName: 'Humsafar HQ' });
-      setLoading(false);
-      return;
-    }
-
-    // 2. Check Group Admins
-    if (!db) { setError("Database not connected"); setLoading(false); return; }
+    setError("");
 
     try {
-      const q = query(collection(db, "admins"), where("username", "==", username));
-      const snapshot = await getDocs(q);
-
-      if (!snapshot.empty) {
-        const userData = snapshot.docs[0].data();
-        if (userData.password === password) {
-          onLogin({ role: 'group', ...userData, id: snapshot.docs[0].id });
-        } else {
-          setError("Incorrect Password");
-        }
-      } else {
-        setError("User not found");
+      if (!auth || !db) {
+        setError("App is not connected to database.");
+        setLoading(false);
+        return;
       }
+
+      // 1) Firebase Auth login
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const uid = cred.user.uid;
+
+      // 2) Fetch admin metadata (role, groupName) from Firestore
+      const adminRef = doc(db, "admins", uid);
+      const adminSnap = await getDoc(adminRef);
+
+      if (!adminSnap.exists()) {
+        setError("No admin profile found for this account.");
+        setLoading(false);
+        return;
+      }
+
+      const adminData = adminSnap.data();
+      // Expect: { email, groupName, role: "super" | "group", ... }
+
+      const role = adminData.role || "group";
+
+      onLogin({
+        role,
+        uid,
+        email: adminData.email || email,
+        groupName: adminData.groupName || "Humsafar",
+        ...adminData,
+      });
+
     } catch (err) {
-      setError("Login failed: " + err.message);
+      console.error(err);
+      if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+        setError("Invalid email or password.");
+      } else {
+        setError("Login failed: " + err.message);
+      }
     }
+
     setLoading(false);
   };
 
   return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
-          <div className="text-center mb-6">
-            <div className="w-12 h-12 bg-indigo-900 rounded-full flex items-center justify-center text-white mx-auto mb-3">
-              <Lock size={20} />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800">Partner Login</h2>
-            <p className="text-sm text-gray-500">Sign in to manage your group</p>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 bg-indigo-900 rounded-full flex items-center justify-center text-white mx-auto mb-3">
+            <Lock size={20} />
           </div>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input className="w-full p-3 border rounded-lg outline-none focus:border-indigo-500" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} />
-            <input className="w-full p-3 border rounded-lg outline-none focus:border-indigo-500" type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
-            {error && <p className="text-red-500 text-sm text-center font-medium">{error}</p>}
-            <button disabled={loading} className="w-full bg-indigo-900 text-white font-bold py-3 rounded-xl hover:bg-indigo-800 disabled:bg-gray-400">
-              {loading ? "Verifying..." : "Login"}
-            </button>
-          </form>
-          <button onClick={onBack} className="w-full text-center text-sm text-gray-500 mt-4 hover:underline">Back to Website</button>
+          <h2 className="text-2xl font-bold text-gray-800">Partner Login</h2>
+          <p className="text-sm text-gray-500">Sign in to manage your group</p>
         </div>
-      </div>
-    );
-  };
 
-  export default LoginScreen;
+        <form onSubmit={handleLogin} className="space-y-4">
+          <input
+            className="w-full p-3 border rounded-lg outline-none focus:border-indigo-500"
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <input
+            className="w-full p-3 border rounded-lg outline-none focus:border-indigo-500"
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          {error && (
+            <p className="text-red-500 text-sm text-center font-medium">
+              {error}
+            </p>
+          )}
+
+          <button
+            disabled={loading}
+            className="w-full bg-indigo-900 text-white font-bold py-3 rounded-xl hover:bg-indigo-800 disabled:bg-gray-400"
+          >
+            {loading ? "Verifying..." : "Login"}
+          </button>
+        </form>
+
+        <button
+          onClick={onBack}
+          className="w-full text-center text-sm text-gray-500 mt-4 hover:underline"
+        >
+          Back to Website
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default LoginScreen;

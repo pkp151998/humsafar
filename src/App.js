@@ -4,6 +4,8 @@ import PublicHome from "./components/PublicHome";
 import LoginScreen from "./components/LoginScreen";
 import SuperAdminDashboard from "./components/SuperAdminDashboard";
 import GroupAdminDashboard from "./components/GroupAdminDashboard";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+
 
 import {
   collection,
@@ -177,17 +179,31 @@ export default function App() {
   // ---------------------------------------------------------
   // 🔵 LOGIN HANDLING
   // ---------------------------------------------------------
-  const handleLogin = (userData) => {
-    setUser(userData);
+ 
+// in LoginScreen
+const auth = getAuth(app);
 
-    if (userData.role === "super") setView("superAdmin");
-    else setView("groupAdmin");
-  };
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
-  const handleLogout = () => {
-    setUser(null);
-    setView("public");
-  };
+  try {
+    // 1. Firebase Auth login
+    const userCred = await signInWithEmailAndPassword(auth, email, password);
+    const uid = userCred.user.uid;
+
+    // 2. Lookup extra info (role, groupName) in admins collection
+    const adminDoc = await getDoc(doc(db, "admins", uid));
+    const adminData = adminDoc.data();
+
+    onLogin({ role: adminData.role, groupName: adminData.groupName, uid });
+  } catch (err) {
+    setError("Invalid email or password");
+  } finally {
+    setLoading(false);
+  }
+};
 
 
 

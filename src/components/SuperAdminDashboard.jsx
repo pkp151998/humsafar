@@ -2,13 +2,18 @@ import React, { useEffect, useState } from "react";
 import { UserPlus } from "lucide-react";
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 
 
 
 const SuperAdminDashboard = ({ user, onLogout }) => {
   const [admins, setAdmins] = useState([]);
   const [profiles, setProfiles] = useState([]);
-  const [newAdmin, setNewAdmin] = useState({ username: '', password: '', groupName: '' });
+  const [newAdmin, setNewAdmin] = useState({
+    email: "",
+    password: "",
+    groupName: "",
+  });
   const [showAdd, setShowAdd] = useState(false);
 
   useEffect(() => {
@@ -23,14 +28,40 @@ const SuperAdminDashboard = ({ user, onLogout }) => {
   }, [showAdd]);
 
   const handleCreateAdmin = async () => {
-    if (!newAdmin.username || !newAdmin.password || !newAdmin.groupName) return alert("Fill all fields");
-    try {
-      await addDoc(collection(db, "admins"), { ...newAdmin, createdAt: new Date().toISOString() });
-      alert("New Group Admin Created!");
-      setNewAdmin({ username: '', password: '', groupName: '' });
-      setShowAdd(false);
-    } catch (e) { alert("Error: " + e.message); }
-  };
+  if (!newAdmin.email || !newAdmin.password || !newAdmin.groupName) {
+    return alert("Fill all fields");
+  }
+
+  if (!auth || !db) {
+    alert("App is not connected to database.");
+    return;
+  }
+
+  try {
+    // 1) Create Firebase Auth user
+    const cred = await createUserWithEmailAndPassword(
+      auth,
+      newAdmin.email,
+      newAdmin.password
+    );
+    const uid = cred.user.uid;
+
+    // 2) Create Admin metadata document (no password stored)
+    await setDoc(doc(db, "admins", uid), {
+      email: newAdmin.email,
+      groupName: newAdmin.groupName,
+      role: "group",
+      createdAt: new Date().toISOString(),
+    });
+
+    alert("New Group Admin Created!");
+    setNewAdmin({ email: "", password: "", groupName: "" });
+    setShowAdd(false);
+  } catch (e) {
+    alert("Error: " + e.message);
+  }
+};
+
 
   const getProfileCount = (groupName) => profiles.filter(p => p.groupName === groupName).length;
 
@@ -41,11 +72,37 @@ const SuperAdminDashboard = ({ user, onLogout }) => {
           <div><h1 className="text-3xl font-bold text-indigo-900">Super Admin HQ</h1><p className="text-gray-500">Overview of all WhatsApp Groups</p></div>
           <button onClick={onLogout} className="bg-white border px-4 py-2 rounded-lg text-sm font-bold text-red-500">Logout</button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-indigo-100"><div className="text-gray-500 text-sm font-bold uppercase mb-1">Total Groups</div><div className="text-3xl font-bold text-indigo-900">{admins.length}</div></div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-indigo-100"><div className="text-gray-500 text-sm font-bold uppercase mb-1">Total Profiles</div><div className="text-3xl font-bold text-indigo-900">{profiles.length}</div></div>
-          <div className="bg-indigo-600 p-6 rounded-xl shadow-lg text-white cursor-pointer hover:bg-indigo-700" onClick={() => setShowAdd(!showAdd)}><div className="flex items-center gap-2 font-bold mb-1"><UserPlus size={20} /> Create Admin</div><div className="text-indigo-200 text-sm">Add a new Manager</div></div>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <input
+    className="border p-2 rounded"
+    placeholder="Group Name"
+    value={newAdmin.groupName}
+    onChange={(e) =>
+      setNewAdmin({ ...newAdmin, groupName: e.target.value })
+    }
+  />
+
+  <input
+    className="border p-2 rounded"
+    placeholder="Admin Email"
+    type="email"
+    value={newAdmin.email}
+    onChange={(e) =>
+      setNewAdmin({ ...newAdmin, email: e.target.value })
+    }
+  />
+
+  <input
+    className="border p-2 rounded"
+    placeholder="Temporary Password"
+    type="password"
+    value={newAdmin.password}
+    onChange={(e) =>
+      setNewAdmin({ ...newAdmin, password: e.target.value })
+    }
+  />
+</div>
+
         {showAdd && (
           <div className="bg-white p-6 rounded-xl shadow-md mb-8 border border-indigo-200">
             <h3 className="font-bold text-lg mb-4">Create New Group Admin</h3>
