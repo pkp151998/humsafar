@@ -125,7 +125,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
         ...cleaned,
         groupName: user.groupName,
         // enforce server-trusted identity, don't trust formData
-        addedBy: user.email || user.username || "unknown",
+        addedBy: user.email || user.uid || "unknown",
         createdAt: serverTimestamp(),
         globalProfileNo,
         groupProfileNo,
@@ -342,158 +342,234 @@ export default function GroupAdminDashboard({ user, onLogout }) {
           )}
 
           {/* REVIEW PANEL */}
-          {view === "review" && (
-            <div className="max-w-3xl bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-xl shadow-black/40">
-              <h2 className="text-lg font-semibold text-slate-50 mb-1">
-                Review & Edit Profile
-              </h2>
-              <p className="text-[11px] text-slate-400 mb-4">
-                Please verify the extracted details. You can correct spelling,
-                update information, and then publish.
-              </p>
+          {/* REVIEW PANEL – PREMIUM UI */}
+{view === "review" && (
+  <div className="max-w-4xl mx-auto">
+    {/* top gradient accent */}
+    <div className="h-1 w-full bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500 rounded-full mb-3" />
 
-              <div className="grid grid-cols-2 gap-4 mb-6 text-xs">
-                {/* Basic */}
-                <Input
-                  label="Name"
-                  val={formData.name}
-                  onChange={(v) => handleChange("name", v)}
-                />
-                <Input
-                  label="Gender"
-                  val={formData.gender}
-                  onChange={(v) => handleChange("gender", v)}
-                />
-                <Input
-                  label="Age"
-                  val={formData.age}
-                  onChange={(v) => handleChange("age", v)}
-                />
-                <Input
-                  label="DOB"
-                  val={formData.dob}
-                  onChange={(v) => handleChange("dob", v)}
-                />
-                <Input
-                  label="Height"
-                  val={formData.height}
-                  onChange={(v) => handleChange("height", v)}
-                />
-                <Input
-                  label="Manglik"
-                  val={formData.manglik}
-                  onChange={(v) => handleChange("manglik", v)}
-                />
+    <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-5 md:p-6 shadow-2xl shadow-black/50 backdrop-blur-sm">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-semibold mb-1">
+            Step 2 · Review & Edit
+          </p>
+          <h2 className="text-xl md:text-2xl font-semibold text-slate-50">
+            Confirm biodata before publishing
+          </h2>
+          <p className="text-[11px] text-slate-400 mt-1 max-w-xl">
+            We’ve auto-filled these details from the WhatsApp biodata.
+            Please correct spellings, complete missing fields, and then
+            click <span className="font-semibold text-emerald-400">Publish Profile</span>.
+          </p>
+        </div>
 
-                {/* Education & Work */}
-                <Input
-                  label="Education"
-                  val={formData.education}
-                  onChange={(v) => handleChange("education", v)}
-                  full
-                />
-                <Input
-                  label="Profession"
-                  val={formData.profession}
-                  onChange={(v) => handleChange("profession", v)}
-                  full
-                />
-                <Input
-                  label="Company / Business"
-                  val={formData.company}
-                  onChange={(v) => handleChange("company", v)}
-                  full
-                />
-                <Input
-                  label="Income"
-                  val={formData.income}
-                  onChange={(v) => handleChange("income", v)}
-                />
-                <Input
-                  label="Diet"
-                  val={formData.diet}
-                  onChange={(v) => handleChange("diet", v)}
-                />
+        <div className="flex items-center gap-2 text-[11px] text-slate-400 bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-2">
+          <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400 mr-1" />
+          Parsed from WhatsApp text
+        </div>
+      </div>
 
-                {/* Location */}
-                <Input
-                  label="City"
-                  val={formData.city || formData.pob}
-                  onChange={(v) => {
-                    handleChange("city", v);
-                    if (!formData.pob) handleChange("pob", v);
-                  }}
-                />
-                <Input
-                  label="Birth Place"
-                  val={formData.pob}
-                  onChange={(v) => handleChange("pob", v)}
-                />
-                <Input
-                  label="Address"
-                  val={formData.address}
-                  onChange={(v) => handleChange("address", v)}
-                  full
-                />
+      {/* Form grid */}
+      <div className="space-y-5 mb-6 text-xs">
+        {/* Basic details */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-semibold">
+              Basic Information
+            </h3>
+            <span className="text-[10px] text-slate-500">
+              Name, gender, age, birth details &amp; height
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Name"
+              val={formData.name}
+              onChange={(v) => handleChange("name", v)}
+            />
+            <Input
+              label="Gender"
+              val={formData.gender}
+              onChange={(v) => handleChange("gender", v)}
+            />
+            <Input
+              label="Age"
+              val={formData.age}
+              onChange={(v) => handleChange("age", v)}
+            />
+            <Input
+              label="DOB"
+              val={formData.dob}
+              onChange={(v) => handleChange("dob", v)}
+            />
+            <Input
+              label="Height"
+              val={formData.height}
+              onChange={(v) => handleChange("height", v)}
+            />
+            <Input
+              label="Manglik"
+              val={formData.manglik}
+              onChange={(v) => handleChange("manglik", v)}
+            />
+          </div>
+        </div>
 
-                {/* Caste / Gotra */}
-                <Input
-                  label="Caste"
-                  val={formData.caste}
-                  onChange={(v) => handleChange("caste", v)}
-                />
-                <Input
-                  label="Gotra"
-                  val={formData.gotra}
-                  onChange={(v) => handleChange("gotra", v)}
-                />
+        {/* Education & Work */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-semibold">
+              Education &amp; Career
+            </h3>
+            <span className="text-[10px] text-slate-500">
+              Qualification, job, company &amp; income
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Education"
+              val={formData.education}
+              onChange={(v) => handleChange("education", v)}
+              full
+            />
+            <Input
+              label="Profession"
+              val={formData.profession}
+              onChange={(v) => handleChange("profession", v)}
+              full
+            />
+            <Input
+              label="Company / Business"
+              val={formData.company}
+              onChange={(v) => handleChange("company", v)}
+              full
+            />
+            <Input
+              label="Income"
+              val={formData.income}
+              onChange={(v) => handleChange("income", v)}
+            />
+            <Input
+              label="Diet"
+              val={formData.diet}
+              onChange={(v) => handleChange("diet", v)}
+            />
+          </div>
+        </div>
 
-                {/* Family */}
-                <Input
-                  label="Father Name"
-                  val={formData.father}
-                  onChange={(v) => handleChange("father", v)}
-                />
-                <Input
-                  label="Father Occupation"
-                  val={formData.fatherOcc}
-                  onChange={(v) => handleChange("fatherOcc", v)}
-                />
-                <Input
-                  label="Mother Name"
-                  val={formData.mother}
-                  onChange={(v) => handleChange("mother", v)}
-                />
-                <Input
-                  label="Mother Occupation"
-                  val={formData.motherOcc}
-                  onChange={(v) => handleChange("motherOcc", v)}
-                />
-                <Input
-                  label="Siblings"
-                  val={formData.siblings}
-                  onChange={(v) => handleChange("siblings", v)}
-                  full
-                />
+        {/* Location & Caste */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-semibold">
+              Location &amp; Background
+            </h3>
+            <span className="text-[10px] text-slate-500">
+              City, birth place, address, caste &amp; gotra
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="City"
+              val={formData.city || formData.pob}
+              onChange={(v) => {
+                handleChange("city", v);
+                if (!formData.pob) handleChange("pob", v);
+              }}
+            />
+            <Input
+              label="Birth Place"
+              val={formData.pob}
+              onChange={(v) => handleChange("pob", v)}
+            />
+            <Input
+              label="Address"
+              val={formData.address}
+              onChange={(v) => handleChange("address", v)}
+              full
+            />
+            <Input
+              label="Caste"
+              val={formData.caste}
+              onChange={(v) => handleChange("caste", v)}
+            />
+            <Input
+              label="Gotra"
+              val={formData.gotra}
+              onChange={(v) => handleChange("gotra", v)}
+            />
+          </div>
+        </div>
 
-                {/* Contact */}
-                <Input
-                  label="Contact"
-                  val={formData.contact}
-                  onChange={(v) => handleChange("contact", v)}
-                  full
-                />
-              </div>
+        {/* Family & Contact */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-semibold">
+              Family &amp; Contact
+            </h3>
+            <span className="text-[10px] text-slate-500">
+              Parents, siblings &amp; main contact number
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Father Name"
+              val={formData.father}
+              onChange={(v) => handleChange("father", v)}
+            />
+            <Input
+              label="Father Occupation"
+              val={formData.fatherOcc}
+              onChange={(v) => handleChange("fatherOcc", v)}
+            />
+            <Input
+              label="Mother Name"
+              val={formData.mother}
+              onChange={(v) => handleChange("mother", v)}
+            />
+            <Input
+              label="Mother Occupation"
+              val={formData.motherOcc}
+              onChange={(v) => handleChange("motherOcc", v)}
+            />
+            <Input
+              label="Siblings"
+              val={formData.siblings}
+              onChange={(v) => handleChange("siblings", v)}
+              full
+            />
+            <Input
+              label="Contact (WhatsApp / Mobile)"
+              val={formData.contact}
+              onChange={(v) => handleChange("contact", v)}
+              full
+            />
+          </div>
+        </div>
+      </div>
 
-              <button
-                onClick={handleSave}
-                disabled={loading}
-                className="w-full inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl bg-emerald-500 text-white shadow-md hover:shadow-lg hover:bg-emerald-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {loading ? "Saving..." : "Publish Profile"}
-              </button>
-            </div>
-          )}
+      {/* Actions */}
+      <div className="flex flex-col md:flex-row gap-3">
+        <button
+          type="button"
+          onClick={() => setView("add")}
+          className="w-full md:w-auto inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-slate-700 text-xs font-medium text-slate-300 hover:bg-slate-900/80 transition"
+        >
+          ← Back to Paste Screen
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className="w-full md:w-auto inline-flex items-center justify-center gap-2 text-xs md:text-sm font-semibold px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30 hover:shadow-lg hover:scale-[1.01] transition disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {loading ? "Saving…" : "Publish Profile"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
           {/* DETAIL VIEW – FULL BIODATA */}
           {view === "detail" && selectedProfile && (
