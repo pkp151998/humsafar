@@ -4,6 +4,8 @@ import PublicHome from "./components/PublicHome";
 import LoginScreen from "./components/LoginScreen";
 import SuperAdminDashboard from "./components/SuperAdminDashboard";
 import GroupAdminDashboard from "./components/GroupAdminDashboard";
+import MemberDashboard from "./components/MemberDashboard";
+
 
 import {
   collection,
@@ -181,11 +183,19 @@ export default function App() {
   // 🔵 LOGIN HANDLING
   // ---------------------------------------------------------
   const handleLogin = (userData) => {
-    setUser(userData);
+  setUser(userData);
 
-    if (userData.role === "super") setView("superAdmin");
-    else setView("groupAdmin");
-  };
+  if (userData.role === "super") {
+    setView("superAdmin");
+  } else if (userData.role === "group") {
+    setView("groupAdmin");
+  } else if (userData.role === "member") {
+    setView("memberDashboard");
+  } else {
+    setView("public"); // fallback
+  }
+};
+
 
   const handleLogout = () => {
     setUser(null);
@@ -231,6 +241,15 @@ export default function App() {
           onLogout={handleLogout}
         />
       )}
+
+      {/* MEMBER DASHBOARD */}
+{view === "memberDashboard" && (
+  <MemberDashboard
+    user={user}
+    onLogout={handleLogout}
+  />
+)}
+
 
       {/* SHARED PROFILE VIEW */}
       {view === "sharedProfile" && (
