@@ -16,7 +16,7 @@ import {
 import { db } from "../firebase";
 import { parseBiodataHybrid } from "../utils/parseBiodata";
 import Input from "./Input";
-import { updateDoc } from "firebase/firestore";
+
 
 // --------- HELPERS ---------
 
