@@ -11,10 +11,12 @@ import {
   where,
   runTransaction,
   serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { parseBiodataHybrid } from "../utils/parseBiodata";
 import Input from "./Input";
+import { updateDoc } from "firebase/firestore";
 
 // --------- HELPERS ---------
 
@@ -71,6 +73,8 @@ export default function GroupAdminDashboard({ user, onLogout }) {
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const [editingProfileId, setEditingProfileId] = useState(null);
+
 
   // FETCH PROFILES FOR THIS GROUP
   useEffect(() => {
@@ -101,6 +105,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
   };
 
   // SAVE PROFILE with safe counters + sanitization
+    // SAVE PROFILE with safe counters + sanitization
   const handleSave = async () => {
     if (!db) {
       alert("App is not connected to database.");
@@ -116,30 +121,51 @@ export default function GroupAdminDashboard({ user, onLogout }) {
     try {
       const cleaned = sanitizeProfile(formData);
 
-      // Generate unique global + group profile numbers using a transaction
-      const { global, group } = await getNextProfileNumbers(db, user.groupName);
-      const globalProfileNo = `HS-${String(global).padStart(5, "0")}`;
-      const groupProfileNo = `${user.groupName}-${group}`;
+      if (editingProfileId) {
+        // 🔵 EDIT EXISTING PROFILE
+        const profileRef = doc(db, "profiles", editingProfileId);
 
-      await addDoc(collection(db, "profiles"), {
-        ...cleaned,
-        groupName: user.groupName,
-        // enforce server-trusted identity, don't trust formData
-        addedBy: user.email || user.uid || "unknown",
-        createdAt: serverTimestamp(),
-        globalProfileNo,
-        groupProfileNo,
-      });
+        await updateDoc(profileRef, {
+          ...cleaned,
+          // keep meta fields (groupName, addedBy, globalProfileNo) as they are
+          // just ensure groupName is correct
+          groupName: user.groupName,
+          updatedAt: serverTimestamp(),
+        });
 
-      setRawText("");
-      setFormData({});
-      setView("list");
+        setEditingProfileId(null);
+        setSelectedProfile(null);
+        setView("list");
+      } else {
+        // 🟢 CREATE NEW PROFILE – same as before
+        const { global, group } = await getNextProfileNumbers(
+          db,
+          user.groupName
+        );
+        const globalProfileNo = `HS-${String(global).padStart(5, "0")}`;
+        const groupProfileNo = `${user.groupName}-${group}`;
+
+        await addDoc(collection(db, "profiles"), {
+          ...cleaned,
+          groupName: user.groupName,
+          // enforce server-trusted identity, don't trust formData
+          addedBy: user.email || user.uid || "unknown",
+          createdAt: serverTimestamp(),
+          globalProfileNo,
+          groupProfileNo,
+        });
+
+        setRawText("");
+        setFormData({});
+        setView("list");
+      }
     } catch (e) {
       console.error(e);
       alert("Error: " + e.message);
     }
     setLoading(false);
   };
+
 
   // DELETE PROFILE
   const handleDelete = async (id) => {
@@ -352,12 +378,13 @@ export default function GroupAdminDashboard({ user, onLogout }) {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-semibold mb-1">
-            Step 2 · Review & Edit
-          </p>
-          <h2 className="text-xl md:text-2xl font-semibold text-slate-50">
-            Confirm biodata before publishing
-          </h2>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-semibold mb-1">
+  {editingProfileId ? "Edit Existing Profile" : "Step 2 · Review & Edit"}
+</p>
+<h2 className="text-xl md:text-2xl font-semibold text-slate-50">
+  {editingProfileId ? "Update biodata details" : "Confirm biodata before publishing"}
+</h2>
+
           <p className="text-[11px] text-slate-400 mt-1 max-w-xl">
             We’ve auto-filled these details from the WhatsApp biodata.
             Please correct spellings, complete missing fields, and then
@@ -552,19 +579,30 @@ export default function GroupAdminDashboard({ user, onLogout }) {
       {/* Actions */}
       <div className="flex flex-col md:flex-row gap-3">
         <button
-          type="button"
-          onClick={() => setView("add")}
-          className="w-full md:w-auto inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-slate-700 text-xs font-medium text-slate-300 hover:bg-slate-900/80 transition"
-        >
-          ← Back to Paste Screen
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="w-full md:w-auto inline-flex items-center justify-center gap-2 text-xs md:text-sm font-semibold px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30 hover:shadow-lg hover:scale-[1.01] transition disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {loading ? "Saving…" : "Publish Profile"}
-        </button>
+  type="button"
+  onClick={() => {
+    if (editingProfileId && selectedProfile) {
+      // go back to detail view if we came from there
+      setView("detail");
+    } else {
+      setView("add");
+    }
+  }}
+  className="w-full md:w-auto inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-slate-700 text-xs font-medium text-slate-300 hover:bg-slate-900/80 transition"
+>
+  {editingProfileId ? "← Cancel Editing" : "← Back to Paste Screen"}
+</button>
+
+<button
+  onClick={handleSave}
+  disabled={loading}
+  className="w-full md:w-auto inline-flex items-center justify-center gap-2 text-xs md:text-sm font-semibold px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30 hover:shadow-lg hover:scale-[1.01] transition disabled:opacity-60 disabled:cursor-not-allowed"
+>
+  {loading
+    ? editingProfileId ? "Updating…" : "Saving…"
+    : editingProfileId ? "Update Profile" : "Publish Profile"}
+</button>
+
       </div>
     </div>
   </div>
@@ -573,16 +611,31 @@ export default function GroupAdminDashboard({ user, onLogout }) {
 
           {/* DETAIL VIEW – FULL BIODATA */}
           {view === "detail" && selectedProfile && (
-            <div className="max-w-4xl bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-2xl shadow-black/50">
-              <button
-                onClick={() => {
-                  setView("list");
-                  setSelectedProfile(null);
-                }}
-                className="text-[11px] mb-3 text-slate-400 hover:text-slate-200 hover:underline"
-              >
-                ← Back to My Profiles
-              </button>
+  <div className="max-w-4xl bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-2xl shadow-black/50">
+    <div className="flex items-center justify-between mb-3">
+      <button
+        onClick={() => {
+          setView("list");
+          setSelectedProfile(null);
+        }}
+        className="text-[11px] text-slate-400 hover:text-slate-200 hover:underline"
+      >
+        ← Back to My Profiles
+      </button>
+
+      <button
+        onClick={() => {
+          // pre-fill form with existing profile and go to review screen
+          setFormData(selectedProfile);
+          setEditingProfileId(selectedProfile.id);
+          setView("review");
+        }}
+        className="inline-flex items-center gap-2 text-[11px] px-3 py-1.5 rounded-lg bg-slate-800 text-slate-100 border border-slate-600 hover:bg-slate-700"
+      >
+        Edit Profile
+      </button>
+    </div>
+
 
               {/* Header */}
               <div className="flex flex-wrap items-start gap-4 mb-4">
