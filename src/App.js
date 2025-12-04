@@ -5,6 +5,9 @@ import LoginScreen from "./components/LoginScreen";
 import SuperAdminDashboard from "./components/SuperAdminDashboard";
 import GroupAdminDashboard from "./components/GroupAdminDashboard";
 import MemberDashboard from "./components/MemberDashboard";
+import MemberAuthScreen from "./components/MemberAuthScreen";
+// (Later you can also add MemberDashboard here when ready)
+
 
 
 import {
@@ -182,7 +185,7 @@ export default function App() {
   // ---------------------------------------------------------
   // 🔵 LOGIN HANDLING
   // ---------------------------------------------------------
-  const handleLogin = (userData) => {
+ const handleLogin = (userData) => {
   setUser(userData);
 
   if (userData.role === "super") {
@@ -190,11 +193,15 @@ export default function App() {
   } else if (userData.role === "group") {
     setView("groupAdmin");
   } else if (userData.role === "member") {
+    // later we can send to MemberDashboard
+    // for now we can just keep them on public or add a stub
+    // but I'll assume you'll add MemberDashboard soon:
     setView("memberDashboard");
   } else {
-    setView("public"); // fallback
+    setView("public");
   }
 };
+
 
 
   const handleLogout = () => {
@@ -211,12 +218,23 @@ export default function App() {
     <>
       {/* PUBLIC HOME */}
       {view === "public" && (
-        <PublicHome
-          profiles={profiles}
-          onLoginClick={() => setView("login")}
-          loading={loading}
-        />
-      )}
+  <PublicHome
+    profiles={profiles}
+    onAdminLoginClick={() => setView("login")}
+    onMemberLoginClick={() => setView("memberAuth")}
+    loading={loading}
+  />
+)}
+
+{/* MEMBER AUTH (LOGIN / SIGNUP) */}
+{view === "memberAuth" && (
+  <MemberAuthScreen
+    onLogin={handleLogin}
+    onBack={() => setView("public")}
+  />
+)}
+
+
 
       {/* LOGIN SCREEN */}
       {view === "login" && (
