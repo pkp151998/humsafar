@@ -39,7 +39,8 @@ export default function ProfilePage() {
         <p><b>Income:</b> {profile.income}</p>
         <p><b>City:</b> {profile.city}</p>
         <p><b>Address:</b> {profile.address}</p>
-        <p><b>Contact:</b> {profile.contact}</p>
+        <p><b>Contact:</b> Contact details are shared only with authorized partners.</p>
+
       </div>
     </div>
   );

@@ -86,9 +86,12 @@ const SharedProfileView = ({ profile, onBack }) => {
           <p><strong>Siblings:</strong> {profile.siblings || "—"}</p>
 
           <p>
-            <strong>Contact:</strong>{" "}
-            <span className="font-mono">{profile.contact || "—"}</span>
-          </p>
+  <strong>Contact:</strong>{" "}
+  <span className="font-mono">
+    Contact details are shared only with authorized partners. 
+    Please connect via your group admin or the Humsafar team.
+  </span>
+</p>
         </div>
       </div>
     </div>

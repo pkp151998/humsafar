@@ -359,7 +359,7 @@ export default function PublicHome({ profiles, onLoginClick, loading }) {
                 <div className="space-y-2">
                   <Field
                     label="Contact"
-                    value={selectedProfile.contact}
+                    value="Contact number is shared only with verified partners. Please connect via your group admin."
                     mono
                   />
                   {selectedProfile.globalProfileNo && (
