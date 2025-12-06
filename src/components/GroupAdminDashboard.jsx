@@ -14,7 +14,7 @@ import {
   Heart,
 } from "lucide-react";
 
-// ⬇️ adjust if your paths are different
+
 import { db } from "../firebase";
 import {
   collection,
@@ -30,7 +30,7 @@ import {
 } from "firebase/firestore";
 
 import Input from "./Input";
-// if your parse file path is different, change "../utils/parseBiodata"
+
 import parseBiodata from "../utils//parseBiodata";
 
 function renderInitial(name) {
