@@ -62,6 +62,9 @@ export default function MemberDashboard({ user, onLogout }) {
           const docSnap = snap.docs[0];
           setProfileDocId(docSnap.id);
           setProfileData(docSnap.data());
+        } else {
+          // initialize empty profileData so form shows blank fields
+          setProfileData({});
         }
       } catch (e) {
         console.error(e);
@@ -72,16 +75,24 @@ export default function MemberDashboard({ user, onLogout }) {
     loadProfile();
   }, [user?.uid]);
 
-  // Parse WhatsApp biodata text
+  // Helper to update a single field in profileData
+  const updateField = (field, value) => {
+    setProfileData((prev) => ({
+      ...(prev || {}),
+      [field]: value,
+    }));
+  };
+
+  // Parse WhatsApp biodata text (OPTIONAL)
   const handleParse = () => {
     setStatus("");
     if (!rawText.trim()) return;
     const parsed = parseBiodataHybrid(rawText);
+    // Merge parsed fields into existing profileData
     setProfileData((prev) => ({
       ...(prev || {}),
       ...parsed,
     }));
-    setTab("profile");
   };
 
   // Save or update profile in /profiles
@@ -92,7 +103,7 @@ export default function MemberDashboard({ user, onLogout }) {
     }
 
     if (!profileData || !profileData.name) {
-      setStatus("Please ensure at least Name is present before saving.");
+      setStatus("Please fill at least Name before saving.");
       return;
     }
 
@@ -209,9 +220,9 @@ export default function MemberDashboard({ user, onLogout }) {
                 Your Matrimony Space
               </h2>
               <p className="text-xs text-slate-400 mb-4">
-                You&apos;re logged in as a Humsafar member. You can paste your
-                biodata text, auto-fill details, and save your profile for
-                admins to review.
+                You&apos;re logged in as a Humsafar member. You can fill your
+                biodata in a standard form and optionally use the &quot;Parse
+                My Data&quot; helper for faster entry.
               </p>
 
               <div className="grid gap-4 md:grid-cols-2 text-xs text-slate-300">
@@ -237,16 +248,16 @@ export default function MemberDashboard({ user, onLogout }) {
                 Tips:
                 <ul className="list-disc ml-4 mt-1 space-y-1">
                   <li>
-                    Keep your biodata honest and up to date (education, job,
-                    family).
+                    Fill the standard form carefully; admins use this to
+                    shortlist matches.
+                  </li>
+                  <li>
+                    &quot;Parse My Data&quot; is just an optional helper to
+                    auto-fill fields from WhatsApp text.
                   </li>
                   <li>
                     Contact details are visible only to admins and trusted
                     partners, not to general public.
-                  </li>
-                  <li>
-                    If your parents are managing, they can also log in with this
-                    member account.
                   </li>
                 </ul>
               </div>
@@ -260,47 +271,397 @@ export default function MemberDashboard({ user, onLogout }) {
                 My Biodata
               </h2>
               <p className="text-xs text-slate-400 mb-4">
-                Paste your WhatsApp biodata text on the left, we&apos;ll try to
-                auto-fill details. You can then save or update your profile.
+                First, fill your standard biodata form. If you have a WhatsApp
+                biodata, you can optionally use &quot;Parse My Data&quot; to
+                auto-fill some fields.
               </p>
 
               {loadingProfile ? (
                 <p className="text-xs text-slate-400">Loading your profile…</p>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {/* LEFT: Paste text + parse */}
-                  <div className="space-y-2 text-xs">
-                    <label className="block text-[11px] font-medium text-slate-300">
-                      Paste your biodata text
-                    </label>
-                    <textarea
-                      className="w-full h-48 bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
-                      value={rawText}
-                      onChange={(e) => setRawText(e.target.value)}
-                      placeholder="Paste your full biodata from WhatsApp here..."
-                    />
-                    <button
-                      type="button"
-                      onClick={handleParse}
-                      className="text-[11px] px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-500 disabled:bg-slate-600"
-                      disabled={!rawText.trim()}
-                    >
-                      Auto-fill from text
-                    </button>
+                <div className="grid gap-5 lg:grid-cols-3">
+                  {/* STANDARD FORM */}
+                  <div className="lg:col-span-2 space-y-4 text-xs">
+                    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                      <p className="text-[11px] text-slate-400 mb-2 font-semibold">
+                        Basic Details
+                      </p>
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Full Name
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.name || ""}
+                            onChange={(e) => updateField("name", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Gender
+                          </label>
+                          <select
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.gender || ""}
+                            onChange={(e) =>
+                              updateField("gender", e.target.value)
+                            }
+                          >
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Age
+                          </label>
+                          <input
+                            type="number"
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.age || ""}
+                            onChange={(e) => updateField("age", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Height
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            placeholder={"e.g. 5'7\""}
+                            value={profileData?.height || ""}
+                            onChange={(e) =>
+                              updateField("height", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
 
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      We will try to detect fields like Name, DOB, Height,
-                      Education, Job, Parents, Siblings, Contact etc.
-                    </p>
+                    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                      <p className="text-[11px] text-slate-400 mb-2 font-semibold">
+                        Birth & Astro
+                      </p>
+                      <div className="grid md:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Date of Birth
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            placeholder="DD/MM/YYYY"
+                            value={profileData?.dob || ""}
+                            onChange={(e) => updateField("dob", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Birth Time
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            placeholder="HH:MM"
+                            value={profileData?.tob || ""}
+                            onChange={(e) => updateField("tob", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Birth Place
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.pob || ""}
+                            onChange={(e) => updateField("pob", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid md:grid-cols-3 gap-3 mt-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Manglik
+                          </label>
+                          <select
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.manglik || ""}
+                            onChange={(e) =>
+                              updateField("manglik", e.target.value)
+                            }
+                          >
+                            <option value="">Select</option>
+                            <option value="Manglik">Manglik</option>
+                            <option value="Non-Manglik">Non-Manglik</option>
+                            <option value="Anshik">Anshik Manglik</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Diet
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            placeholder="Veg / Non-veg / Eggetarian"
+                            value={profileData?.diet || ""}
+                            onChange={(e) =>
+                              updateField("diet", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Complexion
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.complexion || ""}
+                            onChange={(e) =>
+                              updateField("complexion", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                      <p className="text-[11px] text-slate-400 mb-2 font-semibold">
+                        Education & Work
+                      </p>
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Education
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.education || ""}
+                            onChange={(e) =>
+                              updateField("education", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Profession / Occupation
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.profession || ""}
+                            onChange={(e) =>
+                              updateField("profession", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Company / Organization
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.company || ""}
+                            onChange={(e) =>
+                              updateField("company", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Income / Package
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            placeholder="e.g. 10 LPA"
+                            value={profileData?.income || ""}
+                            onChange={(e) =>
+                              updateField("income", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                      <p className="text-[11px] text-slate-400 mb-2 font-semibold">
+                        Family Details
+                      </p>
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Father&apos;s Name
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.father || ""}
+                            onChange={(e) =>
+                              updateField("father", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Father&apos;s Occupation
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.fatherOcc || ""}
+                            onChange={(e) =>
+                              updateField("fatherOcc", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Mother&apos;s Name
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.mother || ""}
+                            onChange={(e) =>
+                              updateField("mother", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Mother&apos;s Occupation
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.motherOcc || ""}
+                            onChange={(e) =>
+                              updateField("motherOcc", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <label className="block text-[11px] text-slate-400 mb-1">
+                          Siblings (brothers / sisters)
+                        </label>
+                        <input
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                          value={profileData?.siblings || ""}
+                          onChange={(e) =>
+                            updateField("siblings", e.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                      <p className="text-[11px] text-slate-400 mb-2 font-semibold">
+                        Contact & Location
+                      </p>
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            City / Current Location
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            value={profileData?.city || ""}
+                            onChange={(e) =>
+                              updateField("city", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Caste / Gotra
+                          </label>
+                          <input
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                            placeholder="e.g. Aggarwal, Goel gotra"
+                            value={
+                              profileData?.caste || profileData?.gotra || ""
+                            }
+                            onChange={(e) =>
+                              updateField("caste", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <label className="block text-[11px] text-slate-400 mb-1">
+                          Full Address (optional)
+                        </label>
+                        <textarea
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100 h-16"
+                          value={profileData?.address || ""}
+                          onChange={(e) =>
+                            updateField("address", e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="mt-3">
+                        <label className="block text-[11px] text-slate-400 mb-1">
+                          Contact Number (WhatsApp)
+                        </label>
+                        <input
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
+                          placeholder="e.g. +91XXXXXXXXXX"
+                          value={profileData?.contact || ""}
+                          onChange={(e) =>
+                            updateField("contact", e.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveProfile}
+                        disabled={saving}
+                        className="text-[11px] px-4 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-500 disabled:bg-slate-600"
+                      >
+                        {saving
+                          ? "Saving..."
+                          : profileDocId
+                          ? "Update Profile"
+                          : "Save Profile"}
+                      </button>
+                      {status && (
+                        <p className="text-[11px] text-emerald-300">{status}</p>
+                      )}
+                    </div>
                   </div>
 
-                  {/* RIGHT: Preview + save */}
-                  <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs">
-                    {profileData ? (
-                      <>
-                        <p className="text-[11px] text-slate-400 mb-2">
-                          Preview of saved/parsed profile:
-                        </p>
+                  {/* PARSE MY DATA + PREVIEW */}
+                  <div className="space-y-4 text-xs">
+                    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                      <p className="text-[11px] text-slate-300 font-semibold mb-1">
+                        Parse My Data (Optional)
+                      </p>
+                      <p className="text-[11px] text-slate-500 mb-2">
+                        Paste your WhatsApp biodata text here. We will try to
+                        auto-fill fields like Name, DOB, Height, Education, Job,
+                        Family, Contact, etc. You can still edit everything in
+                        the standard form.
+                      </p>
+                      <textarea
+                        className="w-full h-32 bg-slate-950/90 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100 mb-2"
+                        value={rawText}
+                        onChange={(e) => setRawText(e.target.value)}
+                        placeholder="Paste your full biodata from WhatsApp..."
+                      />
+                      <button
+                        type="button"
+                        onClick={handleParse}
+                        className="text-[11px] px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-500 disabled:bg-slate-600"
+                        disabled={!rawText.trim()}
+                      >
+                        Parse &amp; Merge Into Form
+                      </button>
+                    </div>
+
+                    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                      <p className="text-[11px] text-slate-300 font-semibold mb-2">
+                        Current Profile Preview
+                      </p>
+                      {profileData && Object.keys(profileData).length > 0 ? (
                         <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
                           {Object.keys(profileData).map((key) => (
                             <p key={key}>
@@ -313,33 +674,13 @@ export default function MemberDashboard({ user, onLogout }) {
                             </p>
                           ))}
                         </div>
-
-                        <button
-                          type="button"
-                          onClick={handleSaveProfile}
-                          disabled={saving}
-                          className="mt-3 text-[11px] px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-500 disabled:bg-slate-600"
-                        >
-                          {saving
-                            ? "Saving..."
-                            : profileDocId
-                            ? "Update Profile"
-                            : "Save Profile"}
-                        </button>
-
-                        {status && (
-                          <p className="mt-2 text-[11px] text-emerald-300">
-                            {status}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-[11px] text-slate-400">
-                        No profile found yet. Paste your biodata text on the
-                        left and click &quot;Auto-fill from text&quot; to
-                        create one.
-                      </p>
-                    )}
+                      ) : (
+                        <p className="text-[11px] text-slate-500">
+                          No profile data yet. Start by filling the standard
+                          form or using &quot;Parse My Data&quot;.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
