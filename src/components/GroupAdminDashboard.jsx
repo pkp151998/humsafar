@@ -31,7 +31,7 @@ import {
 
 import Input from "./Input";
 // if your parse file path is different, change "../utils/parseBiodata"
-import parseBiodata from "../parseBiodata";
+import parseBiodata from "../utils//parseBiodata";
 
 function renderInitial(name) {
   if (!name) return "?";
