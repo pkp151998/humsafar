@@ -242,7 +242,8 @@ export default function PublicHome({
                     {p.globalProfileNo && (
                       <button
                         onClick={() => {
-                          const shareUrl = `${window.location.origin}?profile=${p.globalProfileNo}`;
+                          const shareUrl = `${window.location.origin}/p/${p.globalProfileNo}`;
+
                           navigator.clipboard.writeText(shareUrl);
                           alert("Profile link copied!");
                         }}
@@ -382,7 +383,7 @@ export default function PublicHome({
                     <div className="mt-3">
                       <button
                         onClick={() => {
-                          const shareUrl = `${window.location.origin}?profile=${selectedProfile.globalProfileNo}`;
+                          const shareUrl = `${window.location.origin}/p/${selectedProfile.globalProfileNo}`;
                           navigator.clipboard.writeText(shareUrl);
                           alert("Profile link copied!");
                         }}

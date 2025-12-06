@@ -1,4 +1,11 @@
 import React, { useEffect, useState } from "react";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 
 import PublicHome from "./components/PublicHome";
 import LoginScreen from "./components/LoginScreen";
@@ -6,17 +13,8 @@ import SuperAdminDashboard from "./components/SuperAdminDashboard";
 import GroupAdminDashboard from "./components/GroupAdminDashboard";
 import MemberDashboard from "./components/MemberDashboard";
 import MemberAuthScreen from "./components/MemberAuthScreen";
-// (Later you can also add MemberDashboard here when ready)
 
-
-
-import {
-  collection,
-  getDocs,
-  orderBy,
-  query
-} from "firebase/firestore";
-
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "./firebase";
 
 
@@ -26,8 +24,21 @@ import { db } from "./firebase";
 const SharedProfileView = ({ profile, onBack }) => {
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500 text-lg">Profile not found.</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white p-6 rounded-2xl shadow text-center">
+          <p className="font-semibold text-gray-800 mb-1">
+            Profile not found
+          </p>
+          <p className="text-sm text-gray-500 mb-4">
+            This profile number does not exist or is no longer public.
+          </p>
+          <button
+            onClick={onBack}
+            className="text-sm text-indigo-600 hover:underline"
+          >
+            ← Back to Humsafar
+          </button>
+        </div>
       </div>
     );
   }
@@ -59,16 +70,28 @@ const SharedProfileView = ({ profile, onBack }) => {
         </p>
 
         <div className="space-y-2 text-sm text-gray-700">
-          <p><strong>Education:</strong> {profile.education || "—"}</p>
-          <p><strong>Profession:</strong> {profile.profession || "—"}</p>
-          <p><strong>Income:</strong> {profile.income || "—"}</p>
+          <p>
+            <strong>Education:</strong> {profile.education || "—"}
+          </p>
+          <p>
+            <strong>Profession:</strong> {profile.profession || "—"}
+          </p>
+          <p>
+            <strong>Income:</strong> {profile.income || "—"}
+          </p>
           <p>
             <strong>City:</strong>{" "}
             {profile.city || profile.pob || profile.address || "—"}
           </p>
-          <p><strong>Address:</strong> {profile.address || "—"}</p>
-          <p><strong>DOB:</strong> {profile.dob || "—"}</p>
-          <p><strong>Manglik:</strong> {profile.manglik || "—"}</p>
+          <p>
+            <strong>Address:</strong> {profile.address || "—"}
+          </p>
+          <p>
+            <strong>DOB:</strong> {profile.dob || "—"}
+          </p>
+          <p>
+            <strong>Manglik:</strong> {profile.manglik || "—"}
+          </p>
 
           <p>
             <strong>Father:</strong> {profile.father || "—"}{" "}
@@ -88,15 +111,17 @@ const SharedProfileView = ({ profile, onBack }) => {
             )}
           </p>
 
-          <p><strong>Siblings:</strong> {profile.siblings || "—"}</p>
+          <p>
+            <strong>Siblings:</strong> {profile.siblings || "—"}
+          </p>
 
           <p>
-  <strong>Contact:</strong>{" "}
-  <span className="font-mono">
-    Contact details are shared only with authorized partners. 
-    Please connect via your group admin or the Humsafar team.
-  </span>
-</p>
+            <strong>Contact:</strong>{" "}
+            <span className="font-mono text-xs">
+              Contact details are shared only with authorized partners. Please
+              connect via your group admin or the Humsafar team.
+            </span>
+          </p>
         </div>
       </div>
     </div>
@@ -104,44 +129,65 @@ const SharedProfileView = ({ profile, onBack }) => {
 };
 
 
+// ---------------------------------------------------------
+// 🛡️ ProtectedRoute – checks login + role
+// ---------------------------------------------------------
+const ProtectedRoute = ({ user, allowedRoles, children }) => {
+  if (!user) {
+    // not logged in → send to home
+    return <Navigate to="/" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    // logged in but wrong role
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
 
 // ---------------------------------------------------------
-// 🔵 MAIN APP
+// 🔗 Route wrapper for /p/:code
 // ---------------------------------------------------------
-export default function App() {
+const SharedProfileRoute = ({ profiles, loading }) => {
+  const { code } = useParams();
+  const navigate = useNavigate();
 
-  const [view, setView] = useState("public");
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-sm text-gray-500">Loading profile…</p>
+      </div>
+    );
+  }
+
+  const profile = profiles.find((p) => p.globalProfileNo === code);
+
+  return (
+    <SharedProfileView
+      profile={profile}
+      onBack={() => navigate("/")}
+    />
+  );
+};
+
+
+// ---------------------------------------------------------
+// 🔵 MAIN APP (inner, uses router hooks)
+// ---------------------------------------------------------
+function AppInner() {
   const [user, setUser] = useState(null);
   const [profiles, setProfiles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingProfiles, setLoadingProfiles] = useState(true);
 
-  // For shared profile link
-  const [sharedProfileCode, setSharedProfileCode] = useState(null);
-  const [sharedProfile, setSharedProfile] = useState(null);
+  const navigate = useNavigate();
 
-
-  // ---------------------------------------------------------
-  // 🔴 1. On First Load → Check if ?profile=HS-00023 exists
-  // ---------------------------------------------------------
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("profile");
-
-    if (code) {
-      setSharedProfileCode(code);
-      setView("sharedProfile");
-    }
-  }, []);
-
-
-
-  // ---------------------------------------------------------
-  // 🔵 2. Fetch all profiles normally
-  // ---------------------------------------------------------
+  // Fetch all public profiles on first load
   useEffect(() => {
     const load = async () => {
       if (!db) {
-        setLoading(false);
+        setLoadingProfiles(false);
         return;
       }
 
@@ -150,143 +196,126 @@ export default function App() {
           collection(db, "profiles"),
           orderBy("createdAt", "desc")
         );
-
         const snap = await getDocs(q);
-
-        setProfiles(
-          snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-        );
+        setProfiles(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       } catch (e) {
         console.error(e);
       }
 
-      setLoading(false);
+      setLoadingProfiles(false);
     };
 
     load();
-  }, [view]);
+  }, []);
 
+  // LOGIN HANDLER – decides where to send user
+  const handleLogin = (userData) => {
+    setUser(userData);
 
-
-  // ---------------------------------------------------------
-  // 🔵 3. After profiles load + shared code available → find it
-  // ---------------------------------------------------------
-  useEffect(() => {
-    if (sharedProfileCode && profiles.length > 0) {
-      const found = profiles.find(
-        (p) => p.globalProfileNo === sharedProfileCode
-      );
-      setSharedProfile(found || null);
+    if (userData.role === "super") {
+      navigate("/admin/dashboard");
+    } else if (userData.role === "group") {
+      navigate("/partner/dashboard");
+    } else if (userData.role === "member") {
+      navigate("/member/dashboard");
+    } else {
+      navigate("/");
     }
-  }, [sharedProfileCode, profiles]);
-
-
-
-  // ---------------------------------------------------------
-  // 🔵 LOGIN HANDLING
-  // ---------------------------------------------------------
- const handleLogin = (userData) => {
-  setUser(userData);
-
-  if (userData.role === "super") {
-    setView("superAdmin");
-  } else if (userData.role === "group") {
-    setView("groupAdmin");
-  } else if (userData.role === "member") {
-    // later we can send to MemberDashboard
-    // for now we can just keep them on public or add a stub
-    // but I'll assume you'll add MemberDashboard soon:
-    setView("memberDashboard");
-  } else {
-    setView("public");
-  }
-};
-
-
+  };
 
   const handleLogout = () => {
     setUser(null);
-    setView("public");
+    navigate("/");
   };
 
-
-
-  // ---------------------------------------------------------
-  // 🔵 RENDER
-  // ---------------------------------------------------------
   return (
-    <>
+    <Routes>
       {/* PUBLIC HOME */}
-      {view === "public" && (
-  <PublicHome
-    profiles={profiles}
-    onAdminLoginClick={() => setView("login")}
-    onMemberLoginClick={() => setView("memberAuth")}
-    loading={loading}
-  />
-)}
+      <Route
+        path="/"
+        element={
+          <PublicHome
+            profiles={profiles}
+            loading={loadingProfiles}
+            onAdminLoginClick={() => navigate("/admin")}
+            onMemberLoginClick={() => navigate("/member")}
+          />
+        }
+      />
 
-{/* MEMBER AUTH (LOGIN / SIGNUP) */}
-{view === "memberAuth" && (
-  <MemberAuthScreen
-    onLogin={handleLogin}
-    onBack={() => setView("public")}
-  />
-)}
+      {/* ADMIN LOGIN */}
+      <Route
+        path="/admin"
+        element={
+          <LoginScreen
+            onLogin={handleLogin}
+            onBack={() => navigate("/")}
+          />
+        }
+      />
 
+      {/* MEMBER LOGIN / SIGNUP */}
+      <Route
+        path="/member"
+        element={
+          <MemberAuthScreen
+            onLogin={handleLogin}
+            onBack={() => navigate("/")}
+          />
+        }
+      />
 
+      {/* SUPER ADMIN DASHBOARD */}
+      <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute user={user} allowedRoles={["super"]}>
+            <SuperAdminDashboard user={user} onLogout={handleLogout} />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* LOGIN SCREEN */}
-      {view === "login" && (
-        <LoginScreen
-          onLogin={handleLogin}
-          onBack={() => setView("public")}
-        />
-      )}
-
-      {/* SUPER ADMIN */}
-      {view === "superAdmin" && (
-        <SuperAdminDashboard
-          user={user}
-          onLogout={handleLogout}
-        />
-      )}
-
-      {/* GROUP ADMIN */}
-      {view === "groupAdmin" && (
-        <GroupAdminDashboard
-          user={user}
-          onLogout={handleLogout}
-        />
-      )}
+      {/* GROUP / PARTNER DASHBOARD */}
+      <Route
+        path="/partner/dashboard"
+        element={
+          <ProtectedRoute user={user} allowedRoles={["group", "super"]}>
+            <GroupAdminDashboard user={user} onLogout={handleLogout} />
+          </ProtectedRoute>
+        }
+      />
 
       {/* MEMBER DASHBOARD */}
-{view === "memberDashboard" && (
-  <MemberDashboard
-    user={user}
-    onLogout={handleLogout}
-  />
-)}
+      <Route
+        path="/member/dashboard"
+        element={
+          <ProtectedRoute user={user} allowedRoles={["member"]}>
+            <MemberDashboard user={user} onLogout={handleLogout} />
+          </ProtectedRoute>
+        }
+      />
 
+      {/* PUBLIC SHARED PROFILE – /p/HS-00023 */}
+      <Route
+        path="/p/:code"
+        element={
+          <SharedProfileRoute
+            profiles={profiles}
+            loading={loadingProfiles}
+          />
+        }
+      />
 
-      {/* SHARED PROFILE VIEW */}
-      {view === "sharedProfile" && (
-        <SharedProfileView
-          profile={sharedProfile}
-          onBack={() => {
-            // Remove ?profile=... from URL
-            const url = new URL(window.location.href);
-            url.searchParams.delete("profile");
-            window.history.replaceState(null, "", url.toString());
-
-            // Reset
-            setSharedProfile(null);
-            setSharedProfileCode(null);
-
-            setView("public");
-          }}
-        />
-      )}
-    </>
+      {/* FALLBACK */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
+}
+
+
+// ---------------------------------------------------------
+// Outer App (router is already in index.js)
+// ---------------------------------------------------------
+export default function App() {
+  return <AppInner />;
 }

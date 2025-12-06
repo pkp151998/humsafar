@@ -743,7 +743,8 @@ export default function GroupAdminDashboard({ user, onLogout }) {
                   {selectedProfile.globalProfileNo && (
                     <button
                       onClick={() => {
-                        const shareUrl = `${window.location.origin}?profile=${selectedProfile.globalProfileNo}`;
+                        const shareUrl = `${window.location.origin}/p/${selectedProfile.globalProfileNo}`;
+
                         navigator.clipboard.writeText(shareUrl);
                         alert("Profile link copied!");
                       }}
