@@ -682,6 +682,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
                   <Field label="Birth Place" value={selectedProfile.pob} />
                   <Field label="Manglik" value={selectedProfile.manglik} />
                   <Field label="Diet" value={selectedProfile.diet} />
+                   <Field label="Complexion" value={selectedProfile.complexion} />
                 </div>
 
                 {/* Education & Work */}
@@ -736,7 +737,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
                   {/* Do NOT show raw contact here in case screen is shared */}
                   <Field
                     label="Contact"
-                    value="Contact details are shared only with authorized partners. Please connect via your group admin."
+                    value={selectedProfile.contact || "—"}
                     mono
                   />
                   {selectedProfile.globalProfileNo && (
