@@ -65,7 +65,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
     
     const q = query(
       collection(db, "profiles"),
-      where("groupname", "==", user.groupName),
+      where("groupName", "==", user.groupName),
       orderBy("createdAt", "desc")
     );
 
