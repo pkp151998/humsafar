@@ -1,12 +1,132 @@
 // src/components/MemberDashboard.jsx
-import React, { useState } from "react";
-import { LogOut, User, Shield, HeartHandshake } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { LogOut, User, Shield, HeartHandshake, FileText } from "lucide-react";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  doc,
+  updateDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import { parseBiodataHybrid } from "../utils/parseBiodata";
+
+// Basic sanitization (same idea as in GroupAdminDashboard)
+const sanitizeProfile = (data) => {
+  const cleaned = {};
+  Object.keys(data || {}).forEach((key) => {
+    const value = data[key];
+    if (typeof value === "string") {
+      const noTags = value.replace(/<[^>]*>/g, "").trim();
+      cleaned[key] = noTags.slice(0, 500);
+    } else {
+      cleaned[key] = value;
+    }
+  });
+  return cleaned;
+};
 
 export default function MemberDashboard({ user, onLogout }) {
   const [tab, setTab] = useState("overview"); // "overview" | "profile" | "account";
 
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState("");
+
+  const [rawText, setRawText] = useState("");
+  const [profileDocId, setProfileDocId] = useState(null);
+  const [profileData, setProfileData] = useState(null);
+
   const tag =
     user.managedBy === "family" ? "FAMILY-MANAGED" : "SELF-MANAGED";
+
+  // Load existing member-owned profile from /profiles
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!db || !user?.uid) {
+        setLoadingProfile(false);
+        return;
+      }
+
+      try {
+        const q = query(
+          collection(db, "profiles"),
+          where("memberUid", "==", user.uid)
+        );
+        const snap = await getDocs(q);
+
+        if (!snap.empty) {
+          const docSnap = snap.docs[0];
+          setProfileDocId(docSnap.id);
+          setProfileData(docSnap.data());
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      setLoadingProfile(false);
+    };
+
+    loadProfile();
+  }, [user?.uid]);
+
+  // Parse WhatsApp biodata text
+  const handleParse = () => {
+    setStatus("");
+    if (!rawText.trim()) return;
+    const parsed = parseBiodataHybrid(rawText);
+    setProfileData((prev) => ({
+      ...(prev || {}),
+      ...parsed,
+    }));
+    setTab("profile");
+  };
+
+  // Save or update profile in /profiles
+  const handleSaveProfile = async () => {
+    if (!db || !user?.uid) {
+      setStatus("App is not connected to database.");
+      return;
+    }
+
+    if (!profileData || !profileData.name) {
+      setStatus("Please ensure at least Name is present before saving.");
+      return;
+    }
+
+    setSaving(true);
+    setStatus("");
+
+    try {
+      const cleaned = sanitizeProfile(profileData);
+      const payload = {
+        ...cleaned,
+        memberUid: user.uid,
+        source: "member",
+        updatedAt: serverTimestamp(),
+      };
+
+      if (!profileDocId) {
+        // CREATE
+        payload.createdAt = serverTimestamp();
+        const docRef = await addDoc(collection(db, "profiles"), payload);
+        setProfileDocId(docRef.id);
+        setStatus("Profile created successfully.");
+      } else {
+        // UPDATE
+        const ref = doc(db, "profiles", profileDocId);
+        await updateDoc(ref, payload);
+        setStatus("Profile updated successfully.");
+      }
+    } catch (e) {
+      console.error(e);
+      setStatus(e.message || "Failed to save profile. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col">
@@ -82,16 +202,16 @@ export default function MemberDashboard({ user, onLogout }) {
             </div>
           </div>
 
-          {/* TAB CONTENT */}
+          {/* TAB CONTENTS */}
           {tab === "overview" && (
             <div>
               <h2 className="text-lg font-semibold text-slate-50 mb-1">
                 Your Matrimony Space
               </h2>
               <p className="text-xs text-slate-400 mb-4">
-                You&apos;re logged in as a Humsafar member. Soon you&apos;ll be able
-                to manage your complete biodata, photos, and visibility
-                preferences from here.
+                You&apos;re logged in as a Humsafar member. You can paste your
+                biodata text, auto-fill details, and save your profile for
+                admins to review.
               </p>
 
               <div className="grid gap-4 md:grid-cols-2 text-xs text-slate-300">
@@ -114,11 +234,20 @@ export default function MemberDashboard({ user, onLogout }) {
               </div>
 
               <div className="mt-5 text-[11px] text-slate-500 border-t border-slate-800 pt-3">
-                Coming soon:
+                Tips:
                 <ul className="list-disc ml-4 mt-1 space-y-1">
-                  <li>Create your own biodata directly from WhatsApp text</li>
-                  <li>Edit and update your details anytime</li>
-                  <li>Control what is visible to public and to admins</li>
+                  <li>
+                    Keep your biodata honest and up to date (education, job,
+                    family).
+                  </li>
+                  <li>
+                    Contact details are visible only to admins and trusted
+                    partners, not to general public.
+                  </li>
+                  <li>
+                    If your parents are managing, they can also log in with this
+                    member account.
+                  </li>
                 </ul>
               </div>
             </div>
@@ -126,37 +255,94 @@ export default function MemberDashboard({ user, onLogout }) {
 
           {tab === "profile" && (
             <div>
-              <h2 className="text-lg font-semibold text-slate-50 mb-1">
+              <h2 className="text-lg font-semibold text-slate-50 mb-1 flex items-center gap-2">
+                <FileText size={16} />
                 My Biodata
               </h2>
               <p className="text-xs text-slate-400 mb-4">
-                In the next phase, this section will show your live biodata as
-                seen by admins and potential matches.
+                Paste your WhatsApp biodata text on the left, we&apos;ll try to
+                auto-fill details. You can then save or update your profile.
               </p>
 
-              <div className="bg-slate-950/60 border border-dashed border-slate-700 rounded-xl p-4 text-xs text-slate-400">
-                <p className="mb-2">
-                  ✅ Your member account is active. Your detailed marriage
-                  profile will either be:
-                </p>
-                <ul className="list-disc ml-4 space-y-1">
-                  <li>
-                    Created by you (self-managed), or
-                  </li>
-                  <li>
-                    Added by your family / group admin (family-managed).
-                  </li>
-                </ul>
+              {loadingProfile ? (
+                <p className="text-xs text-slate-400">Loading your profile…</p>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {/* LEFT: Paste text + parse */}
+                  <div className="space-y-2 text-xs">
+                    <label className="block text-[11px] font-medium text-slate-300">
+                      Paste your biodata text
+                    </label>
+                    <textarea
+                      className="w-full h-48 bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                      value={rawText}
+                      onChange={(e) => setRawText(e.target.value)}
+                      placeholder="Paste your full biodata from WhatsApp here..."
+                    />
+                    <button
+                      type="button"
+                      onClick={handleParse}
+                      className="text-[11px] px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-500 disabled:bg-slate-600"
+                      disabled={!rawText.trim()}
+                    >
+                      Auto-fill from text
+                    </button>
 
-                <p className="mt-3">
-                  Once this feature is enabled, you&apos;ll be able to:
-                </p>
-                <ul className="list-disc ml-4 mt-1 space-y-1">
-                  <li>Paste your WhatsApp biodata and auto-fill details</li>
-                  <li>Review and edit all important fields</li>
-                  <li>Download / share a clean biodata copy</li>
-                </ul>
-              </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      We will try to detect fields like Name, DOB, Height,
+                      Education, Job, Parents, Siblings, Contact etc.
+                    </p>
+                  </div>
+
+                  {/* RIGHT: Preview + save */}
+                  <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs">
+                    {profileData ? (
+                      <>
+                        <p className="text-[11px] text-slate-400 mb-2">
+                          Preview of saved/parsed profile:
+                        </p>
+                        <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+                          {Object.keys(profileData).map((key) => (
+                            <p key={key}>
+                              <span className="font-semibold text-slate-200">
+                                {key}:
+                              </span>{" "}
+                              <span className="text-slate-300">
+                                {String(profileData[key])}
+                              </span>
+                            </p>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleSaveProfile}
+                          disabled={saving}
+                          className="mt-3 text-[11px] px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-500 disabled:bg-slate-600"
+                        >
+                          {saving
+                            ? "Saving..."
+                            : profileDocId
+                            ? "Update Profile"
+                            : "Save Profile"}
+                        </button>
+
+                        {status && (
+                          <p className="mt-2 text-[11px] text-emerald-300">
+                            {status}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-[11px] text-slate-400">
+                        No profile found yet. Paste your biodata text on the
+                        left and click &quot;Auto-fill from text&quot; to
+                        create one.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -197,8 +383,8 @@ export default function MemberDashboard({ user, onLogout }) {
                       &quot;Forgot password&quot; flow on the login screen.
                     </p>
                     <p className="text-[11px] text-slate-500 mt-1">
-                      Later we can add in-dashboard options for password change
-                      and 2-step verification.
+                      Later, you can add dashboard options for password change,
+                      phone login, and 2-step verification.
                     </p>
                   </div>
                 </div>
