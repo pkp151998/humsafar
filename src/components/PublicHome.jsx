@@ -30,7 +30,7 @@ export default function PublicHome({
       p.city?.toLowerCase().includes(term) ||
       p.pob?.toLowerCase().includes(term);
 
-    c const matchesGender =
+    const matchesGender =
       filterGender === "All" || p.gender === filterGender;
 
     // Age filter
