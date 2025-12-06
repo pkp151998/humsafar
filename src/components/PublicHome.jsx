@@ -11,7 +11,6 @@ export default function PublicHome({
   onMemberLoginClick,
   loading,
 }) {
-
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGender, setFilterGender] = useState("All");
   const [minAge, setMinAge] = useState("");
@@ -23,7 +22,9 @@ export default function PublicHome({
 
   const filtered = profiles.filter((p) => {
     const term = searchTerm.toLowerCase().trim();
+
     const matchesSearch =
+      !term ||
       p.name?.toLowerCase().includes(term) ||
       p.profession?.toLowerCase().includes(term) ||
       p.groupName?.toLowerCase().includes(term) ||
@@ -101,21 +102,20 @@ export default function PublicHome({
           </div>
 
           <div className="flex items-center gap-2">
-  <button
-    onClick={onMemberLoginClick}
-    className="text-sm font-medium px-4 py-2 rounded-full bg-gradient-to-r from-rose-500 to-purple-600 text-white shadow-sm hover:shadow-md hover:scale-[1.02] transition"
-  >
-    Member Login / Signup
-  </button>
+            <button
+              onClick={onMemberLoginClick}
+              className="text-sm font-medium px-4 py-2 rounded-full bg-gradient-to-r from-rose-500 to-purple-600 text-white shadow-sm hover:shadow-md hover:scale-[1.02] transition"
+            >
+              Member Login / Signup
+            </button>
 
-  <button
-    onClick={onAdminLoginClick}
-    className="text-xs md:text-sm font-medium px-3 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-indigo-500 hover:text-indigo-600 hover:shadow-sm transition"
-  >
-    Partner / Admin Login
-  </button>
-</div>
-
+            <button
+              onClick={onAdminLoginClick}
+              className="text-xs md:text-sm font-medium px-3 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-indigo-500 hover:text-indigo-600 hover:shadow-sm transition"
+            >
+              Partner / Admin Login
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -140,111 +140,112 @@ export default function PublicHome({
             groups, curated with care for serious, meaningful relationships.
           </p>
 
-    {/* SEARCH BAR CARD */}
-<div className="w-full max-w-3xl bg-white/95 backdrop-blur rounded-2xl shadow-xl shadow-indigo-900/20 p-3 md:p-4 space-y-3">
-  {/* Row 1 – main search + gender */}
-  <div className="flex flex-col md:flex-row gap-3 items-stretch">
-    <div className="flex-1 flex items-center gap-2 bg-slate-50 rounded-xl px-3">
-      <span className="text-slate-400 text-xs font-medium uppercase">
-        Search
-      </span>
-      <input
-        className="flex-1 bg-transparent py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-        placeholder="Name, profession, city, group..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
-    </div>
+          {/* SEARCH BAR CARD */}
+          <div className="w-full max-w-3xl bg-white/95 backdrop-blur rounded-2xl shadow-xl shadow-indigo-900/20 p-3 md:p-4 space-y-3">
+            {/* Row 1 – main search + gender */}
+            <div className="flex flex-col md:flex-row gap-3 items-stretch">
+              <div className="flex-1 flex items-center gap-2 bg-slate-50 rounded-xl px-3">
+                <span className="text-slate-400 text-xs font-medium uppercase">
+                  Search
+                </span>
+                <input
+                  className="flex-1 bg-transparent py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                  placeholder="Name, profession, city, group..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
 
-    <div className="flex items-center gap-2">
-      <select
-        className="px-3 py-2 bg-slate-50 rounded-xl text-sm text-slate-700 border border-slate-200 outline-none"
-        value={filterGender}
-        onChange={(e) => setFilterGender(e.target.value)}
-      >
-        <option value="All">All Profiles</option>
-        <option value="Female">Brides</option>
-        <option value="Male">Grooms</option>
-      </select>
+              <div className="flex items-center gap-2">
+                <select
+                  className="px-3 py-2 bg-slate-50 rounded-xl text-sm text-slate-700 border border-slate-200 outline-none"
+                  value={filterGender}
+                  onChange={(e) => setFilterGender(e.target.value)}
+                >
+                  <option value="All">All Profiles</option>
+                  <option value="Female">Brides</option>
+                  <option value="Male">Grooms</option>
+                </select>
 
-      <button
-        className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 text-white text-sm font-semibold shadow-md shadow-rose-500/30 hover:shadow-lg hover:scale-[1.02] transition"
-      >
-        {loading ? "Loading..." : `View ${filtered.length} Profiles`}
-      </button>
-    </div>
-  </div>
+                <button
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 text-white text-sm font-semibold shadow-md shadow-rose-500/30 hover:shadow-lg hover:scale-[1.02] transition"
+                >
+                  {loading ? "Loading..." : `View ${filtered.length} Profiles`}
+                </button>
+              </div>
+            </div>
 
-  {/* Row 2 – advanced filters */}
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
-    {/* Age */}
-    <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center gap-1.5">
-      <span className="uppercase tracking-[0.16em] text-slate-400">
-        Age
-      </span>
-      <input
-        type="number"
-        min="18"
-        className="w-10 bg-transparent border-b border-slate-200 text-xs text-slate-700 px-1 py-0.5 outline-none"
-        placeholder="Min"
-        value={minAge}
-        onChange={(e) => setMinAge(e.target.value)}
-      />
-      <span className="text-slate-400">–</span>
-      <input
-        type="number"
-        min="18"
-        className="w-10 bg-transparent border-b border-slate-200 text-xs text-slate-700 px-1 py-0.5 outline-none"
-        placeholder="Max"
-        value={maxAge}
-        onChange={(e) => setMaxAge(e.target.value)}
-      />
-    </div>
+            {/* Row 2 – advanced filters */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+              {/* Age */}
+              <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center gap-1.5">
+                <span className="uppercase tracking-[0.16em] text-slate-400">
+                  Age
+                </span>
+                <input
+                  type="number"
+                  min="18"
+                  className="w-10 bg-transparent border-b border-slate-200 text-xs text-slate-700 px-1 py-0.5 outline-none"
+                  placeholder="Min"
+                  value={minAge}
+                  onChange={(e) => setMinAge(e.target.value)}
+                />
+                <span className="text-slate-400">–</span>
+                <input
+                  type="number"
+                  min="18"
+                  className="w-10 bg-transparent border-b border-slate-200 text-xs text-slate-700 px-1 py-0.5 outline-none"
+                  placeholder="Max"
+                  value={maxAge}
+                  onChange={(e) => setMaxAge(e.target.value)}
+                />
+              </div>
 
-    {/* City */}
-    <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center gap-1.5">
-      <span className="uppercase tracking-[0.16em] text-slate-400">
-        City
-      </span>
-      <input
-        className="flex-1 bg-transparent text-xs text-slate-700 outline-none"
-        placeholder="e.g. Delhi, Jaipur"
-        value={filterCity}
-        onChange={(e) => setFilterCity(e.target.value)}
-      />
-    </div>
+              {/* City */}
+              <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center gap-1.5">
+                <span className="uppercase tracking-[0.16em] text-slate-400">
+                  City
+                </span>
+                <input
+                  className="flex-1 bg-transparent text-xs text-slate-700 outline-none"
+                  placeholder="e.g. Delhi, Jaipur"
+                  value={filterCity}
+                  onChange={(e) => setFilterCity(e.target.value)}
+                />
+              </div>
 
-    {/* Caste / Gotra */}
-    <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center gap-1.5">
-      <span className="uppercase tracking-[0.16em] text-slate-400">
-        Caste
-      </span>
-      <input
-        className="flex-1 bg-transparent text-xs text-slate-700 outline-none"
-        placeholder="e.g. Aggarwal"
-        value={filterCaste}
-        onChange={(e) => setFilterCaste(e.target.value)}
-      />
-    </div>
+              {/* Caste / Gotra */}
+              <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center gap-1.5">
+                <span className="uppercase tracking-[0.16em] text-slate-400">
+                  Caste
+                </span>
+                <input
+                  className="flex-1 bg-transparent text-xs text-slate-700 outline-none"
+                  placeholder="e.g. Aggarwal"
+                  value={filterCaste}
+                  onChange={(e) => setFilterCaste(e.target.value)}
+                />
+              </div>
 
-    {/* Manglik */}
-    <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center justify-between gap-1.5">
-      <span className="uppercase tracking-[0.16em] text-slate-400">
-        Manglik
-      </span>
-      <select
-        className="bg-transparent text-xs text-slate-700 outline-none"
-        value={filterManglik}
-        onChange={(e) => setFilterManglik(e.target.value)}
-      >
-        <option value="All">Any</option>
-        <option value="Yes">Yes</option>
-        <option value="No">No</option>
-      </select>
-    </div>
-  </div>
-</div>
-
+              {/* Manglik */}
+              <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center justify-between gap-1.5">
+                <span className="uppercase tracking-[0.16em] text-slate-400">
+                  Manglik
+                </span>
+                <select
+                  className="bg-transparent text-xs text-slate-700 outline-none"
+                  value={filterManglik}
+                  onChange={(e) => setFilterManglik(e.target.value)}
+                >
+                  <option value="All">Any</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* PROFILES SECTION */}
       <section className="max-w-6xl mx-auto px-4 pb-16 pt-6">
