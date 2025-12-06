@@ -14,20 +14,66 @@ export default function PublicHome({
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGender, setFilterGender] = useState("All");
+  const [minAge, setMinAge] = useState("");
+  const [maxAge, setMaxAge] = useState("");
+  const [filterCity, setFilterCity] = useState("");
+  const [filterCaste, setFilterCaste] = useState("");
+  const [filterManglik, setFilterManglik] = useState("All");
   const [selectedProfile, setSelectedProfile] = useState(null);
 
   const filtered = profiles.filter((p) => {
+    const term = searchTerm.toLowerCase().trim();
     const matchesSearch =
-      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.profession?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.groupName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.pob?.toLowerCase().includes(searchTerm.toLowerCase());
+      p.name?.toLowerCase().includes(term) ||
+      p.profession?.toLowerCase().includes(term) ||
+      p.groupName?.toLowerCase().includes(term) ||
+      p.city?.toLowerCase().includes(term) ||
+      p.pob?.toLowerCase().includes(term);
 
-    const matchesGender =
+    c const matchesGender =
       filterGender === "All" || p.gender === filterGender;
 
-    return matchesSearch && matchesGender;
+    // Age filter
+    const ageNum = parseInt(p.age, 10);
+    let matchesAge = true;
+    const hasAgeFilter = minAge || maxAge;
+
+    if (hasAgeFilter) {
+      if (isNaN(ageNum)) {
+        matchesAge = false;
+      } else {
+        if (minAge && ageNum < Number(minAge)) matchesAge = false;
+        if (maxAge && ageNum > Number(maxAge)) matchesAge = false;
+      }
+    }
+
+    // City filter (city OR pob)
+    const citySource = (p.city || p.pob || "").toLowerCase();
+    const matchesCity =
+      !filterCity ||
+      citySource.includes(filterCity.toLowerCase());
+
+    // Caste / Gotra filter
+    const casteSource = (p.caste || p.gotra || "").toLowerCase();
+    const matchesCaste =
+      !filterCaste ||
+      casteSource.includes(filterCaste.toLowerCase());
+
+    // Manglik filter (handles Yes / No / All)
+    const manglikValue = (p.manglik || "").toLowerCase();
+    const matchesManglik =
+      filterManglik === "All" ||
+      (filterManglik === "Yes" && manglikValue.startsWith("y")) ||
+      (filterManglik === "No" && manglikValue.startsWith("n"));
+
+    return (
+      matchesSearch &&
+      matchesGender &&
+      matchesAge &&
+      matchesCity &&
+      matchesCaste &&
+      matchesManglik
+    );
   });
 
   const renderInitial = (name) => {
@@ -94,40 +140,111 @@ export default function PublicHome({
             groups, curated with care for serious, meaningful relationships.
           </p>
 
-          {/* SEARCH BAR CARD */}
-          <div className="w-full max-w-3xl bg-white/95 backdrop-blur rounded-2xl shadow-xl shadow-indigo-900/20 p-3 md:p-4 flex flex-col md:flex-row gap-3 items-stretch">
-            <div className="flex-1 flex items-center gap-2 bg-slate-50 rounded-xl px-3">
-              <span className="text-slate-400 text-xs font-medium uppercase">
-                Search
-              </span>
-              <input
-                className="flex-1 bg-transparent py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                placeholder="Search by name, profession, city or group..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+    {/* SEARCH BAR CARD */}
+<div className="w-full max-w-3xl bg-white/95 backdrop-blur rounded-2xl shadow-xl shadow-indigo-900/20 p-3 md:p-4 space-y-3">
+  {/* Row 1 – main search + gender */}
+  <div className="flex flex-col md:flex-row gap-3 items-stretch">
+    <div className="flex-1 flex items-center gap-2 bg-slate-50 rounded-xl px-3">
+      <span className="text-slate-400 text-xs font-medium uppercase">
+        Search
+      </span>
+      <input
+        className="flex-1 bg-transparent py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+        placeholder="Name, profession, city, group..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+    </div>
 
-            <div className="flex items-center gap-2">
-              <select
-                className="px-3 py-2 bg-slate-50 rounded-xl text-sm text-slate-700 border border-slate-200 outline-none"
-                value={filterGender}
-                onChange={(e) => setFilterGender(e.target.value)}
-              >
-                <option value="All">All Profiles</option>
-                <option value="Female">Brides</option>
-                <option value="Male">Grooms</option>
-              </select>
+    <div className="flex items-center gap-2">
+      <select
+        className="px-3 py-2 bg-slate-50 rounded-xl text-sm text-slate-700 border border-slate-200 outline-none"
+        value={filterGender}
+        onChange={(e) => setFilterGender(e.target.value)}
+      >
+        <option value="All">All Profiles</option>
+        <option value="Female">Brides</option>
+        <option value="Male">Grooms</option>
+      </select>
 
-              <button
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 text-white text-sm font-semibold shadow-md shadow-rose-500/30 hover:shadow-lg hover:scale-[1.02] transition"
-              >
-                {loading ? "Loading..." : `View ${filtered.length} Profiles`}
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+      <button
+        className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 text-white text-sm font-semibold shadow-md shadow-rose-500/30 hover:shadow-lg hover:scale-[1.02] transition"
+      >
+        {loading ? "Loading..." : `View ${filtered.length} Profiles`}
+      </button>
+    </div>
+  </div>
+
+  {/* Row 2 – advanced filters */}
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+    {/* Age */}
+    <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center gap-1.5">
+      <span className="uppercase tracking-[0.16em] text-slate-400">
+        Age
+      </span>
+      <input
+        type="number"
+        min="18"
+        className="w-10 bg-transparent border-b border-slate-200 text-xs text-slate-700 px-1 py-0.5 outline-none"
+        placeholder="Min"
+        value={minAge}
+        onChange={(e) => setMinAge(e.target.value)}
+      />
+      <span className="text-slate-400">–</span>
+      <input
+        type="number"
+        min="18"
+        className="w-10 bg-transparent border-b border-slate-200 text-xs text-slate-700 px-1 py-0.5 outline-none"
+        placeholder="Max"
+        value={maxAge}
+        onChange={(e) => setMaxAge(e.target.value)}
+      />
+    </div>
+
+    {/* City */}
+    <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center gap-1.5">
+      <span className="uppercase tracking-[0.16em] text-slate-400">
+        City
+      </span>
+      <input
+        className="flex-1 bg-transparent text-xs text-slate-700 outline-none"
+        placeholder="e.g. Delhi, Jaipur"
+        value={filterCity}
+        onChange={(e) => setFilterCity(e.target.value)}
+      />
+    </div>
+
+    {/* Caste / Gotra */}
+    <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center gap-1.5">
+      <span className="uppercase tracking-[0.16em] text-slate-400">
+        Caste
+      </span>
+      <input
+        className="flex-1 bg-transparent text-xs text-slate-700 outline-none"
+        placeholder="e.g. Aggarwal"
+        value={filterCaste}
+        onChange={(e) => setFilterCaste(e.target.value)}
+      />
+    </div>
+
+    {/* Manglik */}
+    <div className="bg-slate-50 rounded-xl px-2 py-1.5 flex items-center justify-between gap-1.5">
+      <span className="uppercase tracking-[0.16em] text-slate-400">
+        Manglik
+      </span>
+      <select
+        className="bg-transparent text-xs text-slate-700 outline-none"
+        value={filterManglik}
+        onChange={(e) => setFilterManglik(e.target.value)}
+      >
+        <option value="All">Any</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    </div>
+  </div>
+</div>
+
 
       {/* PROFILES SECTION */}
       <section className="max-w-6xl mx-auto px-4 pb-16 pt-6">
