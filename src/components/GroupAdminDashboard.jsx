@@ -130,6 +130,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
           // keep meta fields (groupName, addedBy, globalProfileNo) as they are
           // just ensure groupName is correct
           groupName: user.groupName,
+          addedBy: user.email || user.uid || "unknown",
           updatedAt: serverTimestamp(),
         });
 
