@@ -62,12 +62,10 @@ export default function GroupAdminDashboard({ user, onLogout }) {
   useEffect(() => {
     if (!user || !db) return;
 
-    // ⬇️ IMPORTANT:
-    // If in your DB, profiles are linked through groupId, change this to:
-    // where("groupId", "==", user.groupId)
+    
     const q = query(
       collection(db, "profiles"),
-      where("groupAdminUid", "==", user.uid),
+      where("groupname", "==", user.groupName),
       orderBy("createdAt", "desc")
     );
 
