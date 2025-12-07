@@ -1,3 +1,4 @@
+// src/App.js
 import React, { useEffect, useState } from "react";
 import {
   Routes,
@@ -7,6 +8,10 @@ import {
   useParams,
 } from "react-router-dom";
 
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "./firebase";
+
+// Components
 import PublicHome from "./components/PublicHome";
 import LoginScreen from "./components/LoginScreen";
 import SuperAdminDashboard from "./components/SuperAdminDashboard";
@@ -14,12 +19,8 @@ import GroupAdminDashboard from "./components/GroupAdminDashboard";
 import MemberDashboard from "./components/MemberDashboard";
 import MemberAuthScreen from "./components/MemberAuthScreen";
 
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { db } from "./firebase";
-
-
 // ---------------------------------------------------------
-// 🔵 Shared Profile Viewer Component
+// 🔵 Shared Profile Viewer Component (UI Only)
 // ---------------------------------------------------------
 const SharedProfileView = ({ profile, onBack }) => {
   if (!profile) {
@@ -70,50 +71,23 @@ const SharedProfileView = ({ profile, onBack }) => {
         </p>
 
         <div className="space-y-2 text-sm text-gray-700">
-          <p>
-            <strong>Education:</strong> {profile.education || "—"}
-          </p>
-          <p>
-            <strong>Profession:</strong> {profile.profession || "—"}
-          </p>
-          <p>
-            <strong>Income:</strong> {profile.income || "—"}
-          </p>
-          <p>
-            <strong>City:</strong>{" "}
-            {profile.city || profile.pob || profile.address || "—"}
-          </p>
-          <p>
-            <strong>Address:</strong> {profile.address || "—"}
-          </p>
-          <p>
-            <strong>DOB:</strong> {profile.dob || "—"}
-          </p>
-          <p>
-            <strong>Manglik:</strong> {profile.manglik || "—"}
-          </p>
+          <p><strong>Education:</strong> {profile.education || "—"}</p>
+          <p><strong>Profession:</strong> {profile.profession || "—"}</p>
+          <p><strong>Income:</strong> {profile.income || "—"}</p>
+          <p><strong>City:</strong> {profile.city || profile.pob || profile.address || "—"}</p>
+          <p><strong>Address:</strong> {profile.address || "—"}</p>
+          <p><strong>DOB:</strong> {profile.dob || "—"}</p>
+          <p><strong>Manglik:</strong> {profile.manglik || "—"}</p>
 
           <p>
             <strong>Father:</strong> {profile.father || "—"}{" "}
-            {profile.fatherOcc && (
-              <span className="text-xs text-gray-500">
-                ({profile.fatherOcc})
-              </span>
-            )}
+            {profile.fatherOcc && <span className="text-xs text-gray-500">({profile.fatherOcc})</span>}
           </p>
-
           <p>
             <strong>Mother:</strong> {profile.mother || "—"}{" "}
-            {profile.motherOcc && (
-              <span className="text-xs text-gray-500">
-                ({profile.motherOcc})
-              </span>
-            )}
+            {profile.motherOcc && <span className="text-xs text-gray-500">({profile.motherOcc})</span>}
           </p>
-
-          <p>
-            <strong>Siblings:</strong> {profile.siblings || "—"}
-          </p>
+          <p><strong>Siblings:</strong> {profile.siblings || "—"}</p>
 
           <p>
             <strong>Contact:</strong>{" "}
@@ -128,90 +102,69 @@ const SharedProfileView = ({ profile, onBack }) => {
   );
 };
 
-
 // ---------------------------------------------------------
 // 🛡️ ProtectedRoute – checks login + role
 // ---------------------------------------------------------
 const ProtectedRoute = ({ user, allowedRoles, children }) => {
-  if (!user) {
-    // not logged in → send to home
-    return <Navigate to="/" replace />;
-  }
-
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // logged in but wrong role
-    return <Navigate to="/" replace />;
-  }
-
+  if (!user) return <Navigate to="/" replace />;
+  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/" replace />;
   return children;
 };
 
-
 // ---------------------------------------------------------
-// 🔗 Route wrapper for /p/:code
+// 🔗 SharedProfileRoute - Fetches ONE profile by ID
 // ---------------------------------------------------------
-const SharedProfileRoute = ({ profiles, loading }) => {
+const SharedProfileRoute = () => {
   const { code } = useParams();
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSingleProfile = async () => {
+      if (!db) return;
+      try {
+        // Query specific profile by globalProfileNo
+        const q = query(
+          collection(db, "profiles"),
+          where("globalProfileNo", "==", code)
+        );
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          setProfile({ id: snap.docs[0].id, ...snap.docs[0].data() });
+        }
+      } catch (e) {
+        console.error("Error fetching shared profile:", e);
+      }
+      setLoading(false);
+    };
+
+    fetchSingleProfile();
+  }, [code]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-sm text-gray-500">Loading profile…</p>
+        <p className="text-sm text-gray-500">Loading profile details...</p>
       </div>
     );
   }
 
-  const profile = profiles.find((p) => p.globalProfileNo === code);
-
-  return (
-    <SharedProfileView
-      profile={profile}
-      onBack={() => navigate("/")}
-    />
-  );
+  return <SharedProfileView profile={profile} onBack={() => navigate("/")} />;
 };
 
-
 // ---------------------------------------------------------
-// 🔵 MAIN APP (inner, uses router hooks)
+// 🔵 MAIN APP (inner)
 // ---------------------------------------------------------
 function AppInner() {
   const [user, setUser] = useState(null);
-  const [profiles, setProfiles] = useState([]);
-  const [loadingProfiles, setLoadingProfiles] = useState(true);
-
   const navigate = useNavigate();
 
-  // Fetch all public profiles on first load
-  useEffect(() => {
-    const load = async () => {
-      if (!db) {
-        setLoadingProfiles(false);
-        return;
-      }
+  // NOTE: We removed the massive "fetch all profiles" useEffect here.
+  // PublicHome now handles its own pagination.
 
-      try {
-        const q = query(
-          collection(db, "profiles"),
-          orderBy("createdAt", "desc")
-        );
-        const snap = await getDocs(q);
-        setProfiles(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      } catch (e) {
-        console.error(e);
-      }
-
-      setLoadingProfiles(false);
-    };
-
-    load();
-  }, []);
-
-  // LOGIN HANDLER – decides where to send user
   const handleLogin = (userData) => {
     setUser(userData);
-
     if (userData.role === "super") {
       navigate("/admin/dashboard");
     } else if (userData.role === "group") {
@@ -235,8 +188,6 @@ function AppInner() {
         path="/"
         element={
           <PublicHome
-            profiles={profiles}
-            loading={loadingProfiles}
             onAdminLoginClick={() => navigate("/admin")}
             onMemberLoginClick={() => navigate("/member")}
           />
@@ -246,26 +197,16 @@ function AppInner() {
       {/* ADMIN LOGIN */}
       <Route
         path="/admin"
-        element={
-          <LoginScreen
-            onLogin={handleLogin}
-            onBack={() => navigate("/")}
-          />
-        }
+        element={<LoginScreen onLogin={handleLogin} onBack={() => navigate("/")} />}
       />
 
       {/* MEMBER LOGIN / SIGNUP */}
       <Route
         path="/member"
-        element={
-          <MemberAuthScreen
-            onLogin={handleLogin}
-            onBack={() => navigate("/")}
-          />
-        }
+        element={<MemberAuthScreen onLogin={handleLogin} onBack={() => navigate("/")} />}
       />
 
-      {/* SUPER ADMIN DASHBOARD */}
+      {/* DASHBOARDS */}
       <Route
         path="/admin/dashboard"
         element={
@@ -274,8 +215,6 @@ function AppInner() {
           </ProtectedRoute>
         }
       />
-
-      {/* GROUP / PARTNER DASHBOARD */}
       <Route
         path="/partner/dashboard"
         element={
@@ -284,8 +223,6 @@ function AppInner() {
           </ProtectedRoute>
         }
       />
-
-      {/* MEMBER DASHBOARD */}
       <Route
         path="/member/dashboard"
         element={
@@ -295,16 +232,8 @@ function AppInner() {
         }
       />
 
-      {/* PUBLIC SHARED PROFILE – /p/HS-00023 */}
-      <Route
-        path="/p/:code"
-        element={
-          <SharedProfileRoute
-            profiles={profiles}
-            loading={loadingProfiles}
-          />
-        }
-      />
+      {/* PUBLIC SHARED PROFILE LINK */}
+      <Route path="/p/:code" element={<SharedProfileRoute />} />
 
       {/* FALLBACK */}
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -312,10 +241,6 @@ function AppInner() {
   );
 }
 
-
-// ---------------------------------------------------------
-// Outer App (router is already in index.js)
-// ---------------------------------------------------------
 export default function App() {
   return <AppInner />;
 }
