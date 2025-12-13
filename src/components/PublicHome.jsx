@@ -1,9 +1,10 @@
 // src/components/PublicHome.jsx
 import React, { useState } from "react";
 import { Heart, MapPin, Briefcase, Phone, Share2 } from "lucide-react";
+import { BRAND } from "../config/brand";
 
-const APP_NAME = "Humsafar";
-const APP_TAGLINE = "Rishtey wahi, jo dil se judey.";
+const APP_NAME = BRAND.NAME;
+const APP_TAGLINE = BRAND.TAGLINE;;
 
 export default function PublicHome({
   profiles,
@@ -96,7 +97,7 @@ export default function PublicHome({
                 {APP_NAME}
               </span>
               <span className="text-[11px] text-slate-500 uppercase">
-                Premium Matrimony Network
+                Trusted Matrimony Network
               </span>
             </div>
           </div>
@@ -132,7 +133,7 @@ export default function PublicHome({
           <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
             Find Your{" "}
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-200 to-amber-200">
-              Humsafar
+              TruSathi
             </span>
           </h1>
           <p className="text-indigo-100 max-w-2xl mb-8 text-sm md:text-base">
@@ -311,7 +312,7 @@ export default function PublicHome({
                     </div>
 
                     <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
-                      {p.groupName || "Humsafar"}
+                      {p.groupName || "TruSathi"}
                     </span>
                   </div>
 
