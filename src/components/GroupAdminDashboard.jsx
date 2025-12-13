@@ -58,6 +58,18 @@ export default function GroupAdminDashboard({ user, onLogout }) {
   const [filterCaste, setFilterCaste] = useState("");
   const [filterManglik, setFilterManglik] = useState("All");
 
+
+const sanitize = (val) => {
+  if (!val) return "";
+  return val
+    .toString()
+    .replace(/<[^>]*>/g, "")
+    .trim()
+    .slice(0, 500);
+};
+
+
+
   // ========== FETCH PROFILES FOR THIS GROUP ADMIN ==========
   useEffect(() => {
     if (!user || !db) return;
@@ -168,6 +180,12 @@ export default function GroupAdminDashboard({ user, onLogout }) {
     if (!db) return;
 
     try {
+
+      const cleanData = {};
+Object.keys(formData || {}).forEach((k) => {
+  cleanData[k] = sanitize(formData[k]);
+});
+
       const baseData = {
         ...formData,
         groupAdminUid: user.uid,
@@ -222,12 +240,12 @@ export default function GroupAdminDashboard({ user, onLogout }) {
 
   const copyLink = (p) => {
     if (!p.globalProfileNo) {
-      alert("This profile doesn't have a global profile number yet.");
+      alert("This profile is not published yet.");
       return;
     }
     const url = `${window.location.origin}/p/${p.globalProfileNo}`;
     navigator.clipboard.writeText(url);
-    alert("Profile link copied!");
+    alert("Trusathi profile link copied.\n\nShared via Trusathi.com");
   };
 
   // ========== RENDER ==========
@@ -243,7 +261,7 @@ export default function GroupAdminDashboard({ user, onLogout }) {
             </div>
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold">
-                Humsafar Partner Console
+                TruSathi Partner Console
               </span>
               <span className="text-[10px] text-slate-400">
                 {user?.groupName || "Group Admin"}

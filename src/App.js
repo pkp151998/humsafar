@@ -36,7 +36,7 @@ const SharedProfileView = ({ profile, onBack }) => {
             onClick={onBack}
             className="text-sm text-indigo-600 hover:underline"
           >
-            ← Back to Humsafar
+            ← Back to TruSathi
           </button>
         </div>
       </div>
@@ -119,7 +119,7 @@ const SharedProfileView = ({ profile, onBack }) => {
             <strong>Contact:</strong>{" "}
             <span className="font-mono text-xs">
               Contact details are shared only with authorized partners. Please
-              connect via your group admin or the Humsafar team.
+              connect via your group admin or the TruSathi team.
             </span>
           </p>
         </div>
