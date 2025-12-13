@@ -136,10 +136,10 @@ export default function MemberAuthScreen({ onLogin, onBack }) {
           </div>
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-semibold">
-              Humsafar Member
+              TruSathi Member
             </p>
             <h1 className="text-lg font-semibold text-slate-50">
-              {isLogin ? "Member Login" : "Create Member Account"}
+              {isLogin ? "TruSathi Member Login" : "Create TruSathi Account"}
             </h1>
           </div>
         </div>

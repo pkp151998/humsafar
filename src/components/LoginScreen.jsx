@@ -66,10 +66,10 @@ const LoginScreen = ({ onLogin, onBack }) => {
             <Lock size={20} />
           </div>
           <h2 className="text-2xl font-bold text-gray-800">
-            Partner / Admin Login
+            TruSathi Partner Login
           </h2>
           <p className="text-sm text-gray-500">
-            Sign in to manage your group profiles
+            Sign in to manage your TruSathi group profiles
           </p>
         </div>
 
@@ -108,7 +108,7 @@ const LoginScreen = ({ onLogin, onBack }) => {
           onClick={onBack}
           className="w-full text-center text-sm text-gray-500 mt-4 hover:underline"
         >
-          Back to Website
+          Back to TruSathi
         </button>
       </div>
     </div>

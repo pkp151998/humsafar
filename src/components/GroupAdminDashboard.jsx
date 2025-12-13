@@ -188,14 +188,17 @@ Object.keys(formData || {}).forEach((k) => {
 
       const baseData = {
         ...formData,
+        addedBy:user.email,
         groupAdminUid: user.uid,
         groupName: user.groupName || formData.groupName || "",
         groupId: user.groupId || formData.groupId || "",
+        memberUid:null,
         updatedAt: serverTimestamp(),
       };
 
       if (editingProfileId) {
         // Update existing
+        delete baseData.memberUid; // 🚫 never touch member ownership
         await updateDoc(doc(db, "profiles", editingProfileId), baseData);
       } else {
         // New profile

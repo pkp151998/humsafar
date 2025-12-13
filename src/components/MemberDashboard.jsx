@@ -137,6 +137,9 @@ export default function MemberDashboard({ user, onLogout }) {
         ...cleaned,
         memberUid: user.uid,
         source: "member",
+        addedBy:null,
+        groupName:null,
+        groupAdminUid:null,
         updatedAt: serverTimestamp(),
       };
 
@@ -149,6 +152,7 @@ export default function MemberDashboard({ user, onLogout }) {
       } else {
         // UPDATE
         const ref = doc(db, "profiles", profileDocId);
+        payload.memberUid = user.uid; // force ownership
         await updateDoc(ref, payload);
         setStatus("Profile updated successfully.");
       }
@@ -174,7 +178,7 @@ export default function MemberDashboard({ user, onLogout }) {
             </div>
             <div>
               <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400 font-semibold">
-                Humsafar Member
+                TruSathi Member
               </p>
               <h1 className="text-sm md:text-base font-semibold text-slate-100">
                 Welcome, {user.displayName || user.email}
@@ -244,7 +248,7 @@ export default function MemberDashboard({ user, onLogout }) {
                 Your Matrimony Space
               </h2>
               <p className="text-xs text-slate-400 mb-4">
-                You&apos;re logged in as a Humsafar member. You can maintain a
+                You&apos;re logged in as a Trusathi member. You can maintain a
                 clean, standard biodata. &quot;Parse My Data&quot; is just an
                 optional helper on top of the standard form.
               </p>
