@@ -184,6 +184,7 @@ const sanitize = (val) => {
       const cleanData = {};
 Object.keys(formData || {}).forEach((k) => {
   cleanData[k] = sanitize(formData[k]);
+  setView("list");
 });
 
       const baseData = {
@@ -288,9 +289,9 @@ Object.keys(formData || {}).forEach((k) => {
       </header>
 
       {/* MAIN LAYOUT */}
-      <main className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[2fr,1.4fr] gap-4">
-        {/* LEFT COLUMN – LIST / DETAIL */}
-        <section className="space-y-4">
+      <main className="max-w-5xl mx-auto px-4 py-6 space-y-4">
+        {(view === "list" || view === "detail") && (
+          <section className="space-y-4">
           {/* SUMMARY CARD */}
           <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 shadow-2xl shadow-black/50 flex items-center justify-between">
             <div>
@@ -647,22 +648,34 @@ Object.keys(formData || {}).forEach((k) => {
             </div>
           )}
         </section>
+        )}
 
-        {/* RIGHT COLUMN – ADD / EDIT */}
-        <section className="space-y-3">
-          <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 md:p-5 shadow-2xl shadow-black/50 h-full">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500 font-semibold">
-                  {editingProfileId ? "Edit Profile" : "Add New Profile"}
-                </p>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Paste WhatsApp biodata or fill manually.
-                </p>
-              </div>
-            </div>
+      
+        {view === "add" && (
+  <section className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 md:p-5 shadow-2xl shadow-black/50">
 
-            {/* RAW TEXT PARSE */}
+    {/* HEADER */}
+    <div className="flex items-center justify-between mb-4">
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500 font-semibold">
+          {editingProfileId ? "Edit Profile" : "Add New Profile"}
+        </p>
+        <p className="text-[11px] text-slate-400 mt-1">
+          Paste WhatsApp biodata or fill manually.
+        </p>
+      </div>
+
+      <button
+        onClick={() => {
+          clearForm();
+          setView("list");
+        }}
+        className="text-[11px] px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-500 transition"
+      >
+        ← Back
+      </button>
+    </div>
+        {/* RAW TEXT PARSE */}
             <div className="mb-3">
               <textarea
                 className="w-full min-h-[90px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 outline-none"
@@ -687,8 +700,7 @@ Object.keys(formData || {}).forEach((k) => {
                 </button>
               </div>
             </div>
-
-            {/* FORM */}
+    {/* FORM */}
             <form onSubmit={handleAddOrUpdate} className="space-y-2 text-xs">
               <div className="grid grid-cols-2 gap-2">
                 <Input
@@ -855,8 +867,9 @@ Object.keys(formData || {}).forEach((k) => {
                 )}
               </div>
             </form>
-          </div>
-        </section>
+  </section>
+)}
+
       </main>
     </div>
   );
