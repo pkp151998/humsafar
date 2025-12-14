@@ -55,6 +55,13 @@ const SuperAdminDashboard = ({ user, onLogout }) => {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       const uid = cred.user.uid;
 
+      // 2️⃣ SIGN BACK IN AS SUPER ADMIN
+    await signInWithEmailAndPassword(
+      auth,
+      superAdminEmail,
+      prompt("Enter Super Admin password")
+    );
+
       // 2) Create admin metadata (no password stored)
       await setDoc(doc(db, "admins", uid), {
         email,
