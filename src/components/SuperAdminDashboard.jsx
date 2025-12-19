@@ -7,7 +7,8 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db, auth } from "../firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../firebase";
 
 const SuperAdminDashboard = ({ user, onLogout }) => {
   const [admins, setAdmins] = useState([]);
@@ -33,6 +34,9 @@ const SuperAdminDashboard = ({ user, onLogout }) => {
   }, [showAdd]);
 
   const handleCreateAdmin = async () => {
+  
+    
+    
     const { email, password, groupName } = newAdmin;
 
     if (!email || !password || !groupName) {
@@ -51,30 +55,19 @@ const SuperAdminDashboard = ({ user, onLogout }) => {
     }
 
     try {
-      // 1) Create Auth user (sign-up)
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      const uid = cred.user.uid;
-
-      // 2️⃣ SIGN BACK IN AS SUPER ADMIN
-    await signInWithEmailAndPassword(
-      auth,
-      superAdminEmail,
-      prompt("Enter Super Admin password")
-    );
-
-      // 2) Create admin metadata (no password stored)
-      await setDoc(doc(db, "admins", uid), {
-        email,
-        groupName,
-        role: "group",
-        createdAt: new Date().toISOString(),
-      });
-
-      alert("New Group Admin Created!");
-      setNewAdmin({ email: "", password: "", groupName: "" });
-      setShowAdd(false);
-    } catch (e) {
+      setLoading(true);
+      const createGroupAdmin = functions.httpsCallable("createGroupAdmin");
+      const result = await createGroupAdmin({ email, password, groupName });
+      if (result.data.success) {
+        alert("New Group Admin Created Successfully!");
+        setNewAdmin({ email: "", password: "", groupName: "" });
+        setShowAdd(false);
+      }
+      
+    }catch (e) {
       alert("Error: " + e.message);
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getFunctions } from "firebase/functions";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5gD4mjL3g6jASaDTSXauil1Dm7zHVn7c",
@@ -15,13 +16,15 @@ const firebaseConfig = {
 let app;
 let db;
 let auth;
+let functions;
 
 try {
   app = initializeApp(firebaseConfig);
   db = getFirestore(app);
   auth = getAuth(app);
+  functions = getFunctions(app);
 } catch (e) {
   console.error("Firebase init error:", e);
 }
 
-export { db, auth };
+export { db, auth, functions };
