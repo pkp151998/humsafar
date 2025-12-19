@@ -1,66 +1,55 @@
-const functions = require("firebase-functions");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-/**
- * Creates a new Group Admin user and sets up their Firestore record.
- */
-exports.createGroupAdmin = functions.region("asia-south1").https.onCall(async (data, context) => {
-  // 1. Check if the person is logged in
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Please log in.");
+// Creating the function in the Mumbai region to match your database
+exports.createGroupAdmin = onCall({ region: "asia-south1" }, async (request) => {
+  
+  // 1. Security Check: Check for Login
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
   }
 
-  // 2. THE FORCE-FIX: Allow you if you have the role OR if your email matches
-  const isSuper = context.auth.token.role === "super";
-  const isOwner = context.auth.token.email === "pkp151998@gmail.com"; // Your email
+  // 2. Role Check: Allow if Email is yours OR Role is Super
+  const isOwner = request.auth.token.email === "pkp151998@gmail.com";
+  const isSuper = request.auth.token.role === "super";
 
-  if (!isSuper && !isOwner) {
-    throw new functions.https.HttpsError(
-      "permission-denied", 
-      "ERROR 999: Still not working for pkp151998@gmail.com."
-    );
+  if (!isOwner && !isSuper) {
+    throw new HttpsError("permission-denied", "Only Super Admins can create new admins.");
   }
 
-  // 2. Data Validation
-  const {email, password, groupName} = data;
+  const { email, password, groupName } = request.data;
 
+  // 3. Validation
   if (!email || !password || !groupName) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Missing required fields: email, password, or group name.",
-    );
+    throw new HttpsError("invalid-argument", "Missing required fields (email, password, groupName).");
   }
 
   try {
-    // 3. Auth Creation
+    // 4. Create the User in Firebase Auth
     const userRecord = await admin.auth().createUser({
       email: email,
       password: password,
       displayName: groupName,
     });
 
-    // 4. Role Assignment
-    await admin.auth().setCustomUserClaims(userRecord.uid, {
-      role: "group",
-    });
+    // 5. Set the 'group' role claim
+    await admin.auth().setCustomUserClaims(userRecord.uid, { role: "group" });
 
-    // 5. Firestore Setup
-    await admin.firestore().doc(`admins/${userRecord.uid}`).set({
+    // 6. Create the record in Firestore
+    await admin.firestore().collection("admins").doc(userRecord.uid).set({
       email: email,
       groupName: groupName,
       role: "group",
-      managedBy: "super",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: request.auth.token.email,
     });
 
-    return {
-      success: true,
-      message: `Admin for ${groupName} created successfully.`,
-    };
+    return { success: true, uid: userRecord.uid };
+
   } catch (error) {
     console.error("Error creating admin:", error);
-    throw new functions.https.HttpsError("internal", error.message);
+    throw new HttpsError("internal", error.message);
   }
 });
