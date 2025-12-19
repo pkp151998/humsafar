@@ -1,32 +1,62 @@
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+
+admin.initializeApp();
+
 /**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
+ * Creates a new Group Admin user and sets up their Firestore record.
+ * Restricted to users with the "super" custom claim.
  */
+exports.createGroupAdmin = functions.https.onCall(async (data, context) => {
+  // 1️⃣ SECURITY CHECK: Verify the requester is a Super Admin
+  if (!context.auth || context.auth.token.role !== "super") {
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "Only Super Admins can create new admin accounts."
+    );
+  }
 
-const {setGlobalOptions} = require("firebase-functions");
-const {onRequest} = require("firebase-functions/https");
-const logger = require("firebase-functions/logger");
+  // 2️⃣ DATA VALIDATION: Get data from the frontend call
+  const { email, password, groupName } = data;
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+  if (!email || !password || !groupName) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Missing required fields: email, password, or group name."
+    );
+  }
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+  try {
+    // 3️⃣ AUTH CREATION: Create the user in Firebase Auth
+    const userRecord = await admin.auth().createUser({
+      email: email,
+      password: password,
+      displayName: groupName,
+    });
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+    // 4️⃣ ROLE ASSIGNMENT: Tag the new user with 'group' role
+    await admin.auth().setCustomUserClaims(userRecord.uid, { 
+      role: "group" 
+    });
+
+    // 5️⃣ FIRESTORE SETUP: Create the admin record in the database
+    await admin.firestore().doc(`admins/${userRecord.uid}`).set({
+      email: email,
+      groupName: groupName,
+      role: "group",
+      managedBy: "super",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // 6️⃣ SUCCESS RESPONSE
+    return { 
+      success: true, 
+      message: `Admin for ${groupName} created successfully.` 
+    };
+
+  } catch (error) {
+    console.error("Error creating admin:", error);
+    // Return specific Firebase error message to frontend
+    throw new functions.https.HttpsError("internal", error.message);
+  }
+});

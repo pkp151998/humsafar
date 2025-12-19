@@ -13,6 +13,7 @@ import { functions } from "../firebase";
 const SuperAdminDashboard = ({ user, onLogout }) => {
   const [admins, setAdmins] = useState([]);
   const [profiles, setProfiles] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [newAdmin, setNewAdmin] = useState({
     email: "",
     password: "",
@@ -35,8 +36,7 @@ const SuperAdminDashboard = ({ user, onLogout }) => {
 
   const handleCreateAdmin = async () => {
   
-    
-    
+       
     const { email, password, groupName } = newAdmin;
 
     if (!email || !password || !groupName) {
@@ -176,9 +176,10 @@ const SuperAdminDashboard = ({ user, onLogout }) => {
             </div>
             <button
               onClick={handleCreateAdmin}
-              className="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg font-bold w-full md:w-auto"
-            >
-              Create Account
+              disabled={loading}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg disabled:bg-gray-400"
+>
+  {loading ? "Creating..." : "Create Admin Account"}
             </button>
           </div>
         )}
