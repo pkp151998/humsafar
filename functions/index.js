@@ -19,7 +19,7 @@ exports.createGroupAdmin = functions.https.onCall(async (data, context) => {
   if (!isSuper && !isOwner) {
     throw new functions.https.HttpsError(
       "permission-denied", 
-      "Only Super Admins can create new admin accounts."
+      "ERROR 999: Still not working for pkp151998@gmail.com."
     );
   }
 
