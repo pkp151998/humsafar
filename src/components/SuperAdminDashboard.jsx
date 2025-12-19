@@ -7,7 +7,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db, auth } from "../firebase";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { httpsCallable } from "firebase/functions";
 import { functions } from "../firebase";
 
 const SuperAdminDashboard = ({ user, onLogout }) => {
