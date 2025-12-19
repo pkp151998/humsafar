@@ -7,7 +7,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db, auth } from "../firebase";
-import { httpsCallable } from "firebase/functions";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { functions } from "../firebase";
 
 const SuperAdminDashboard = ({ user, onLogout }) => {
@@ -56,7 +56,7 @@ const SuperAdminDashboard = ({ user, onLogout }) => {
 
     try {
       setLoading(true);
-      const createGroupAdmin = functions.httpsCallable("createGroupAdmin");
+      const createGroupAdmin = httpsCallable(functions, "createGroupAdmin");
       const result = await createGroupAdmin({ email, password, groupName });
       if (result.data.success) {
         alert("New Group Admin Created Successfully!");
