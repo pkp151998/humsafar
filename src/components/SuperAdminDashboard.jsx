@@ -7,7 +7,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db, auth } from "../firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 
 const SuperAdminDashboard = ({ user, onLogout }) => {
   const [admins, setAdmins] = useState([]);
