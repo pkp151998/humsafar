@@ -7,11 +7,19 @@ admin.initializeApp();
  * Creates a new Group Admin user and sets up their Firestore record.
  */
 exports.createGroupAdmin = functions.https.onCall(async (data, context) => {
-  // 1. Security Check: Verify the requester is a Super Admin
-  if (!context.auth || context.auth.token.role !== "super") {
+  // 1. Check if the person is logged in
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Please log in.");
+  }
+
+  // 2. THE FORCE-FIX: Allow you if you have the role OR if your email matches
+  const isSuper = context.auth.token.role === "super";
+  const isOwner = context.auth.token.email === "pkp151998@gmail.com"; // Your email
+
+  if (!isSuper && !isOwner) {
     throw new functions.https.HttpsError(
-      "permission-denied",
-      "Only Super Admins can create new admin accounts.",
+      "permission-denied", 
+      "Only Super Admins can create new admin accounts."
     );
   }
 
