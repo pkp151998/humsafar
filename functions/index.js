@@ -6,7 +6,7 @@ admin.initializeApp();
 /**
  * Creates a new Group Admin user and sets up their Firestore record.
  */
-exports.createGroupAdmin = functions.https.onCall(async (data, context) => {
+exports.createGroupAdmin = functions.region("asia-south1").https.onCall(async (data, context) => {
   // 1. Check if the person is logged in
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Please log in.");
